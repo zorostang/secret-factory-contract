@@ -1,7 +1,7 @@
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-use cosmwasm_std::{CanonicalAddr, Storage, HumanAddr};
+use cosmwasm_std::{Storage, HumanAddr};
 use cosmwasm_storage::{singleton, singleton_read, ReadonlySingleton, Singleton};
 
 use crate::msg::ContractInfo;
@@ -32,7 +32,7 @@ pub struct State {
     /// the count for the counter
     pub count: i32,
     /// address of the owner associated to this offspring contract
-    pub owner: CanonicalAddr,
+    pub owner: HumanAddr,
 }
 
 pub fn config<S: Storage>(storage: &mut S) -> Singleton<S, State> {

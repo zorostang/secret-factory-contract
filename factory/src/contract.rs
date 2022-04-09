@@ -471,10 +471,6 @@ fn try_create_key<S: Storage, A: Api, Q: Querier>(
     let mut key_store = PrefixedStorage::new(PREFIX_VIEW_KEY, &mut deps.storage);
     save(&mut key_store, message_sender.as_slice(), &key.to_hashed())?;
 
-    // randomize the PRNG seed:
-    let new_prng_seed = new_entropy(&env, prng_seed.as_ref(), entropy.as_bytes()).to_vec();
-    save(&mut deps.storage, PRNG_SEED_KEY, &new_prng_seed)?;
-
     Ok(HandleResponse {
         messages: vec![],
         log: vec![],

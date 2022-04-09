@@ -2,9 +2,9 @@ use cosmwasm_std::{
     debug_print, to_binary, Api, Env, Extern, HandleResponse, InitResponse, Querier,
     StdError, StdResult, Storage, InitResult, HandleResult, QueryResult, HumanAddr,
 };
-use secret_toolkit::utils::HandleCallback;
+use secret_toolkit::utils::{HandleCallback, Query};
 
-use crate::factory_msg::{FactoryOffspringInfo, FactoryHandleMsg};
+use crate::factory_msg::{FactoryOffspringInfo, FactoryHandleMsg, FactoryQueryMsg, IsKeyValidWrapper};
 use crate::msg::{CountResponse, HandleMsg, InitMsg, QueryMsg};
 use crate::state::{config, config_read, State};
 
@@ -31,7 +31,7 @@ pub fn init<S: Storage, A: Api, Q: Querier>(
         offspring_addr: env.contract.address,
         description: msg.description,
         count: msg.count,
-        owner: deps.api.canonical_address(&msg.owner.clone())?,
+        owner: msg.owner.clone(),
     };
 
     config(&mut deps.storage).save(&state)?;
@@ -85,8 +85,10 @@ pub fn try_increment<S: Storage, A: Api, Q: Querier>(
     deps: &mut Extern<S, A, Q>,
     _env: Env,
 ) -> HandleResult {
-    enforce_active(deps)?;
-    config(&mut deps.storage).update(|mut state| {
+    let mut config = config(&mut deps.storage);
+    let state = &config.load()?;
+    enforce_active(state)?;
+    config.update(|mut state| {
         state.count += 1;
         debug_print!("count = {}", state.count);
         Ok(state)
@@ -109,10 +111,11 @@ pub fn try_reset<S: Storage, A: Api, Q: Querier>(
     env: Env,
     count: i32,
 ) -> HandleResult {
-    enforce_active(deps)?;
-    let sender_address_raw = deps.api.canonical_address(&env.message.sender)?;
-    config(&mut deps.storage).update(|mut state| {
-        if sender_address_raw != state.owner {
+    let mut config = config(&mut deps.storage);
+    let state = &config.load()?;
+    enforce_active(state)?;
+    config.update(|mut state| {
+        if env.message.sender != state.owner {
             return Err(StdError::Unauthorized { backtrace: None });
         }
         state.count = count;
@@ -148,11 +151,56 @@ pub fn query<S: Storage, A: Api, Q: Querier>(
 /// * `deps` - reference to Extern containing all the contract's external dependencies
 fn query_count<S: Storage, A: Api, Q: Querier>(
     deps: &Extern<S, A, Q>, 
-    _address: &HumanAddr, 
-    _viewing_key: String
+    address: &HumanAddr, 
+    viewing_key: String
 ) -> StdResult<CountResponse> {
     let state = config_read(&deps.storage).load()?;
-    Ok(CountResponse { count: state.count })
+    if state.owner == *address {
+        enforce_valid_viewing_key(deps, &state, address, viewing_key)?;
+        return Ok(CountResponse { count: state.count });
+    } else {
+        return Err(StdError::generic_err(
+            // error message chosen as to not leak information.
+            "This address does not have permission and/or viewing key is not valid",
+        ));
+    }
+}
+
+/// Returns StdResult<()>
+///
+/// makes sure that the address and the viewing key match in the factory contract.
+///
+/// # Arguments
+///
+/// * `deps` - a reference to Extern containing all the contract's external dependencies.
+/// * `state` - a reference to the State of the contract.
+/// * `address` - a reference to the address whose viewing key is being validated.
+/// * `viewing_key` - String key used to authenticate a query.
+fn enforce_valid_viewing_key<S: Storage, A: Api, Q: Querier>(
+    deps: &Extern<S, A, Q>,
+    state: &State,
+    address: &HumanAddr,
+    viewing_key: String,
+) -> StdResult<()> {
+    let state_clone = state.clone();
+    let key_valid_msg = FactoryQueryMsg::IsKeyValid {
+        address: address.clone(),
+        viewing_key,
+    };
+    let key_valid_response: IsKeyValidWrapper = key_valid_msg.query(
+        &deps.querier,
+        state_clone.factory.code_hash,
+        state_clone.factory.address
+    )?;
+    // if authenticated
+    if key_valid_response.is_key_valid.is_valid {
+        Ok(())
+    } else {
+        return Err(StdError::generic_err(
+            // error message chosen as to not leak information.
+            "This address does not have permission and/or viewing key is not valid",
+        ));
+    }
 }
 
 /// Returns StdResult<()>
@@ -161,11 +209,9 @@ fn query_count<S: Storage, A: Api, Q: Querier>(
 ///
 /// # Arguments
 ///
-/// * `deps` - a reference to Extern containing all the contract's external dependencies.
-fn enforce_active<S: Storage, A: Api, Q: Querier>(deps: &mut Extern<S, A, Q>) -> StdResult<()> {
-    let config = config_read(&deps.storage).load()?;
-
-    if config.active {
+/// * `state` - a reference to the State of the contract.
+fn enforce_active(state: &State) -> StdResult<()> {
+    if state.active {
         Ok(())
     } else {
         return Err(StdError::generic_err(

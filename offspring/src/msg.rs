@@ -28,7 +28,8 @@ pub enum HandleMsg {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum QueryMsg {
-    // GetCount returns the current count as a json-encoded number
+    // GetCount returns the current count as a json-encoded number. Can only be queried by the owner,
+    // to demonstrate how to use the viewing key in the factory.
     GetCount {
         /// address to authenticate as a viewer
         address: HumanAddr,
