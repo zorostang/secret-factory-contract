@@ -1,12 +1,16 @@
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-use cosmwasm_std::{CanonicalAddr, Storage};
+use cosmwasm_std::{CanonicalAddr, Storage, HumanAddr};
 use cosmwasm_storage::{singleton, singleton_read, ReadonlySingleton, Singleton};
 
 use crate::msg::ContractInfo;
 
 pub static CONFIG_KEY: &[u8] = b"config";
+
+/// pad handle responses and log attributes to blocks of 256 bytes to prevent leaking info based on
+/// response size
+pub const BLOCK_SIZE: usize = 256;
 
 /// State of the offspring contract
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
@@ -19,6 +23,8 @@ pub struct State {
     pub active: bool,
     /// used by factory for authentication
     pub password: [u8; 32],
+    /// address of the offspring contract
+    pub offspring_addr: HumanAddr,
     /// Optional text description of this offspring
     pub description: Option<String>,
     

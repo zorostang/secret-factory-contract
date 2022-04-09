@@ -2,7 +2,9 @@ use cosmwasm_std::{
     debug_print, to_binary, Api, Env, Extern, HandleResponse, InitResponse, Querier,
     StdError, StdResult, Storage, InitResult, HandleResult, QueryResult, HumanAddr,
 };
+use secret_toolkit::utils::HandleCallback;
 
+use crate::factory_msg::{FactoryOffspringInfo, FactoryHandleMsg};
 use crate::msg::{CountResponse, HandleMsg, InitMsg, QueryMsg};
 use crate::state::{config, config_read, State};
 
@@ -26,6 +28,7 @@ pub fn init<S: Storage, A: Api, Q: Querier>(
         index:  msg.index,
         password: msg.password,
         active: true,
+        offspring_addr: env.contract.address,
         description: msg.description,
         count: msg.count,
         owner: deps.api.canonical_address(&msg.owner.clone())?,
@@ -33,10 +36,22 @@ pub fn init<S: Storage, A: Api, Q: Querier>(
 
     config(&mut deps.storage).save(&state)?;
 
-    debug_print!("Contract was initialized with the factory {:?} by {}", msg.factory, env.message.sender);
+    // perform register callback to factory
+    let offspring = FactoryOffspringInfo {
+        index: msg.index,
+        password: msg.password,
+    };
+    let reg_offspring_msg = FactoryHandleMsg::RegisterOffspring {
+        owner: msg.owner,
+        offspring,
+    };
+    let cosmos_msg = reg_offspring_msg.to_cosmos_msg(
+        msg.factory.code_hash, msg.factory.address, None)?;
 
-    // IMPLEMENT CALLBACK HERE.
-    Ok(InitResponse::default())
+    Ok(InitResponse {
+        messages: vec![cosmos_msg],
+        log: vec![],
+    })
 }
 
 ///////////////////////////////////// Handle //////////////////////////////////////
@@ -158,74 +173,3 @@ fn enforce_active<S: Storage, A: Api, Q: Querier>(deps: &mut Extern<S, A, Q>) ->
         ));
     }
 }
-
-// #[cfg(test)]
-// mod tests {
-//     use super::*;
-//     use cosmwasm_std::testing::{mock_dependencies, mock_env};
-//     use cosmwasm_std::{coins, from_binary, StdError};
-
-//     #[test]
-//     fn proper_initialization() {
-//         let mut deps = mock_dependencies(20, &[]);
-
-//         let msg = InitMsg { count: 17 };
-//         let env = mock_env("creator", &coins(1000, "earth"));
-
-//         // we can just call .unwrap() to assert this was a success
-//         let res = init(&mut deps, env, msg).unwrap();
-//         assert_eq!(0, res.messages.len());
-
-//         // it worked, let's query the state
-//         let res = query(&deps, QueryMsg::GetCount {}).unwrap();
-//         let value: CountResponse = from_binary(&res).unwrap();
-//         assert_eq!(17, value.count);
-//     }
-
-//     #[test]
-//     fn increment() {
-//         let mut deps = mock_dependencies(20, &coins(2, "token"));
-
-//         let msg = InitMsg { count: 17 };
-//         let env = mock_env("creator", &coins(2, "token"));
-//         let _res = init(&mut deps, env, msg).unwrap();
-
-//         // anyone can increment
-//         let env = mock_env("anyone", &coins(2, "token"));
-//         let msg = HandleMsg::Increment {};
-//         let _res = handle(&mut deps, env, msg).unwrap();
-
-//         // should increase counter by 1
-//         let res = query(&deps, QueryMsg::GetCount {}).unwrap();
-//         let value: CountResponse = from_binary(&res).unwrap();
-//         assert_eq!(18, value.count);
-//     }
-
-//     #[test]
-//     fn reset() {
-//         let mut deps = mock_dependencies(20, &coins(2, "token"));
-
-//         let msg = InitMsg { count: 17 };
-//         let env = mock_env("creator", &coins(2, "token"));
-//         let _res = init(&mut deps, env, msg).unwrap();
-
-//         // not anyone can reset
-//         let unauth_env = mock_env("anyone", &coins(2, "token"));
-//         let msg = HandleMsg::Reset { count: 5 };
-//         let res = handle(&mut deps, unauth_env, msg);
-//         match res {
-//             Err(StdError::Unauthorized { .. }) => {}
-//             _ => panic!("Must return unauthorized error"),
-//         }
-
-//         // only the original creator can reset the counter
-//         let auth_env = mock_env("creator", &coins(2, "token"));
-//         let msg = HandleMsg::Reset { count: 5 };
-//         let _res = handle(&mut deps, auth_env, msg).unwrap();
-
-//         // should now be 5
-//         let res = query(&deps, QueryMsg::GetCount {}).unwrap();
-//         let value: CountResponse = from_binary(&res).unwrap();
-//         assert_eq!(5, value.count);
-//     }
-// }

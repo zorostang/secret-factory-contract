@@ -98,7 +98,7 @@ pub enum QueryMsg {
         #[serde(default)]
         page_size: Option<u32>,
     },
-    /// authenticates the supplied address/viewing key.  This should only be called by offspring.
+    /// authenticates the supplied address/viewing key. This should be called by offspring.
     IsKeyValid {
         /// address whose viewing key is being authenticated
         address: HumanAddr,
