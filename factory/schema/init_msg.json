@@ -1,0 +1,46 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "InitMsg",
+  "description": "Instantiation message",
+  "type": "object",
+  "required": [
+    "auction_contract",
+    "entropy"
+  ],
+  "properties": {
+    "auction_contract": {
+      "description": "auction contract info",
+      "allOf": [
+        {
+          "$ref": "#/definitions/AuctionContractInfo"
+        }
+      ]
+    },
+    "entropy": {
+      "description": "entropy used to generate prng seed",
+      "type": "string"
+    }
+  },
+  "definitions": {
+    "AuctionContractInfo": {
+      "description": "Info needed to instantiate an auction",
+      "type": "object",
+      "required": [
+        "code_hash",
+        "code_id"
+      ],
+      "properties": {
+        "code_hash": {
+          "description": "code hash of the stored auction contract",
+          "type": "string"
+        },
+        "code_id": {
+          "description": "code id of the stored auction contract",
+          "type": "integer",
+          "format": "uint64",
+          "minimum": 0.0
+        }
+      }
+    }
+  }
+}

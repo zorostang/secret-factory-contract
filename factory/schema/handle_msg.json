@@ -1,0 +1,482 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "HandleMsg",
+  "description": "Handle messages",
+  "anyOf": [
+    {
+      "description": "CreateAuction will instantiate a new auction",
+      "type": "object",
+      "required": [
+        "create_auction"
+      ],
+      "properties": {
+        "create_auction": {
+          "type": "object",
+          "required": [
+            "bid_contract",
+            "ends_at",
+            "label",
+            "minimum_bid",
+            "sell_amount",
+            "sell_contract"
+          ],
+          "properties": {
+            "bid_contract": {
+              "description": "bid contract code hash and address",
+              "allOf": [
+                {
+                  "$ref": "#/definitions/ContractInfo"
+                }
+              ]
+            },
+            "description": {
+              "description": "Optional free-form description of the auction (best to avoid double quotes). As an example it could be the date the owner will likely finalize the auction, or a list of other auctions for the same token, etc...",
+              "default": null,
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "ends_at": {
+              "description": "timestamp after which anyone may close the auction. Timestamp is in seconds since epoch 01/01/1970",
+              "type": "integer",
+              "format": "uint64",
+              "minimum": 0.0
+            },
+            "label": {
+              "description": "String label for the auction",
+              "type": "string"
+            },
+            "minimum_bid": {
+              "description": "minimum bid that will be accepted",
+              "allOf": [
+                {
+                  "$ref": "#/definitions/Uint128"
+                }
+              ]
+            },
+            "sell_amount": {
+              "description": "amount of tokens being sold",
+              "allOf": [
+                {
+                  "$ref": "#/definitions/Uint128"
+                }
+              ]
+            },
+            "sell_contract": {
+              "description": "sell contract code hash and address",
+              "allOf": [
+                {
+                  "$ref": "#/definitions/ContractInfo"
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "description": "RegisterAuction saves the auction info of a newly instantiated auction and adds it to the list of active auctions as well as adding it to the seller's list of auctions\n\nOnly auctions will use this function",
+      "type": "object",
+      "required": [
+        "register_auction"
+      ],
+      "properties": {
+        "register_auction": {
+          "type": "object",
+          "required": [
+            "auction",
+            "sell_contract",
+            "seller"
+          ],
+          "properties": {
+            "auction": {
+              "description": "auction information needed by the factory",
+              "allOf": [
+                {
+                  "$ref": "#/definitions/RegisterAuctionInfo"
+                }
+              ]
+            },
+            "sell_contract": {
+              "description": "sell token contract info",
+              "allOf": [
+                {
+                  "$ref": "#/definitions/ContractInfo"
+                }
+              ]
+            },
+            "seller": {
+              "description": "seller/creator of the auction",
+              "allOf": [
+                {
+                  "$ref": "#/definitions/HumanAddr"
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "description": "CloseAuction tells the factory that the auction closed and provides the winning bid if appropriate\n\nOnly auctions will use this function",
+      "type": "object",
+      "required": [
+        "close_auction"
+      ],
+      "properties": {
+        "close_auction": {
+          "type": "object",
+          "required": [
+            "index",
+            "seller"
+          ],
+          "properties": {
+            "bidder": {
+              "description": "winning bidder if the auction ended in a swap",
+              "default": null,
+              "anyOf": [
+                {
+                  "$ref": "#/definitions/HumanAddr"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "index": {
+              "description": "auction index",
+              "type": "integer",
+              "format": "uint32",
+              "minimum": 0.0
+            },
+            "seller": {
+              "description": "auction seller",
+              "allOf": [
+                {
+                  "$ref": "#/definitions/HumanAddr"
+                }
+              ]
+            },
+            "winning_bid": {
+              "description": "winning bid if the auction ended in a swap",
+              "default": null,
+              "anyOf": [
+                {
+                  "$ref": "#/definitions/Uint128"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "description": "RegisterBidder allows the factory to know an auction has a new bidder so it can update their list of auctions, as well a create a viewing key for the auction if one was set\n\nOnly auctions will use this function",
+      "type": "object",
+      "required": [
+        "register_bidder"
+      ],
+      "properties": {
+        "register_bidder": {
+          "type": "object",
+          "required": [
+            "bidder",
+            "index"
+          ],
+          "properties": {
+            "bidder": {
+              "description": "bidder's address",
+              "allOf": [
+                {
+                  "$ref": "#/definitions/HumanAddr"
+                }
+              ]
+            },
+            "index": {
+              "description": "auction index",
+              "type": "integer",
+              "format": "uint32",
+              "minimum": 0.0
+            }
+          }
+        }
+      }
+    },
+    {
+      "description": "RemoveBidder allows the factory to know a bidder retracted his bid from an auction\n\nOnly auctions will use this function",
+      "type": "object",
+      "required": [
+        "remove_bidder"
+      ],
+      "properties": {
+        "remove_bidder": {
+          "type": "object",
+          "required": [
+            "bidder",
+            "index"
+          ],
+          "properties": {
+            "bidder": {
+              "description": "bidder's address",
+              "allOf": [
+                {
+                  "$ref": "#/definitions/HumanAddr"
+                }
+              ]
+            },
+            "index": {
+              "description": "auction index",
+              "type": "integer",
+              "format": "uint32",
+              "minimum": 0.0
+            }
+          }
+        }
+      }
+    },
+    {
+      "description": "Allows the admin to add a new auction contract version",
+      "type": "object",
+      "required": [
+        "new_auction_contract"
+      ],
+      "properties": {
+        "new_auction_contract": {
+          "type": "object",
+          "required": [
+            "auction_contract"
+          ],
+          "properties": {
+            "auction_contract": {
+              "$ref": "#/definitions/AuctionContractInfo"
+            }
+          }
+        }
+      }
+    },
+    {
+      "description": "Create a viewing key to be used with all factory and auction authenticated queries",
+      "type": "object",
+      "required": [
+        "create_viewing_key"
+      ],
+      "properties": {
+        "create_viewing_key": {
+          "type": "object",
+          "required": [
+            "entropy"
+          ],
+          "properties": {
+            "entropy": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    {
+      "description": "Set a viewing key to be used with all factory and auction authenticated queries",
+      "type": "object",
+      "required": [
+        "set_viewing_key"
+      ],
+      "properties": {
+        "set_viewing_key": {
+          "type": "object",
+          "required": [
+            "key"
+          ],
+          "properties": {
+            "key": {
+              "type": "string"
+            },
+            "padding": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "description": "Allows an admin to start/stop all auction creation",
+      "type": "object",
+      "required": [
+        "set_status"
+      ],
+      "properties": {
+        "set_status": {
+          "type": "object",
+          "required": [
+            "stop"
+          ],
+          "properties": {
+            "stop": {
+              "type": "boolean"
+            }
+          }
+        }
+      }
+    },
+    {
+      "description": "Change the closing time and/or minimum bid of an auction\n\nOnly auctions will call this function",
+      "type": "object",
+      "required": [
+        "change_auction_info"
+      ],
+      "properties": {
+        "change_auction_info": {
+          "type": "object",
+          "required": [
+            "index"
+          ],
+          "properties": {
+            "ends_at": {
+              "description": "optional new closing time in seconds since epoch 01/01/1970",
+              "default": null,
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "uint64",
+              "minimum": 0.0
+            },
+            "index": {
+              "description": "auction index",
+              "type": "integer",
+              "format": "uint32",
+              "minimum": 0.0
+            },
+            "minimum_bid": {
+              "description": "optional new minimum bid",
+              "default": null,
+              "anyOf": [
+                {
+                  "$ref": "#/definitions/Uint128"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          }
+        }
+      }
+    }
+  ],
+  "definitions": {
+    "AuctionContractInfo": {
+      "description": "Info needed to instantiate an auction",
+      "type": "object",
+      "required": [
+        "code_hash",
+        "code_id"
+      ],
+      "properties": {
+        "code_hash": {
+          "description": "code hash of the stored auction contract",
+          "type": "string"
+        },
+        "code_id": {
+          "description": "code id of the stored auction contract",
+          "type": "integer",
+          "format": "uint64",
+          "minimum": 0.0
+        }
+      }
+    },
+    "ContractInfo": {
+      "description": "code hash and address of a contract",
+      "type": "object",
+      "required": [
+        "address",
+        "code_hash"
+      ],
+      "properties": {
+        "address": {
+          "description": "contract's address",
+          "allOf": [
+            {
+              "$ref": "#/definitions/HumanAddr"
+            }
+          ]
+        },
+        "code_hash": {
+          "description": "contract's code hash string",
+          "type": "string"
+        }
+      }
+    },
+    "HumanAddr": {
+      "type": "string"
+    },
+    "RegisterAuctionInfo": {
+      "description": "active auction info for storage",
+      "type": "object",
+      "required": [
+        "bid_symbol",
+        "ends_at",
+        "index",
+        "label",
+        "minimum_bid",
+        "sell_amount",
+        "sell_symbol"
+      ],
+      "properties": {
+        "bid_symbol": {
+          "description": "bid symbol index",
+          "type": "integer",
+          "format": "uint16",
+          "minimum": 0.0
+        },
+        "ends_at": {
+          "description": "timestamp after which anyone may close the auction. Timestamp is in seconds since epoch 01/01/1970",
+          "type": "integer",
+          "format": "uint64",
+          "minimum": 0.0
+        },
+        "index": {
+          "description": "auction index with the factory",
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0.0
+        },
+        "label": {
+          "description": "auction label",
+          "type": "string"
+        },
+        "minimum_bid": {
+          "description": "minimum bid",
+          "allOf": [
+            {
+              "$ref": "#/definitions/Uint128"
+            }
+          ]
+        },
+        "sell_amount": {
+          "description": "sell amount",
+          "allOf": [
+            {
+              "$ref": "#/definitions/Uint128"
+            }
+          ]
+        },
+        "sell_symbol": {
+          "description": "sell symbol index",
+          "type": "integer",
+          "format": "uint16",
+          "minimum": 0.0
+        }
+      }
+    },
+    "Uint128": {
+      "type": "string"
+    }
+  }
+}

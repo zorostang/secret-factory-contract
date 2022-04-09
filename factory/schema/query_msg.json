@@ -1,0 +1,134 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "QueryMsg",
+  "description": "Queries",
+  "anyOf": [
+    {
+      "description": "lists all auctions the given address has owned, won, or have an active bid",
+      "type": "object",
+      "required": [
+        "list_my_auctions"
+      ],
+      "properties": {
+        "list_my_auctions": {
+          "type": "object",
+          "required": [
+            "address",
+            "viewing_key"
+          ],
+          "properties": {
+            "address": {
+              "$ref": "#/definitions/HumanAddr"
+            },
+            "filter": {
+              "description": "optional filter for only active or closed auctions.  If not specified, lists all",
+              "default": null,
+              "anyOf": [
+                {
+                  "$ref": "#/definitions/FilterTypes"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "viewing_key": {
+              "description": "viewing key",
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    {
+      "description": "lists all active auctions sorted by pair",
+      "type": "object",
+      "required": [
+        "list_active_auctions"
+      ],
+      "properties": {
+        "list_active_auctions": {
+          "type": "object"
+        }
+      }
+    },
+    {
+      "description": "lists closed auctions in reverse chronological order.  If you specify page size, it returns only that number of auctions (default is 200).  If you specify the before parameter, it will start listing from the first auction whose index is less than \"before\".  If you are paginating, you would take the index of the last auction you receive, and specify that as the before parameter on your next query so it will continue where it left off",
+      "type": "object",
+      "required": [
+        "list_closed_auctions"
+      ],
+      "properties": {
+        "list_closed_auctions": {
+          "type": "object",
+          "properties": {
+            "before": {
+              "description": "optionally only show auctions with index less than specified value",
+              "default": null,
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "uint32",
+              "minimum": 0.0
+            },
+            "page_size": {
+              "description": "optional number of auctions to return",
+              "default": null,
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "uint32",
+              "minimum": 0.0
+            }
+          }
+        }
+      }
+    },
+    {
+      "description": "authenticates the supplied address/viewing key.  This should only be called by auctions",
+      "type": "object",
+      "required": [
+        "is_key_valid"
+      ],
+      "properties": {
+        "is_key_valid": {
+          "type": "object",
+          "required": [
+            "address",
+            "viewing_key"
+          ],
+          "properties": {
+            "address": {
+              "description": "address whose viewing key is being authenticated",
+              "allOf": [
+                {
+                  "$ref": "#/definitions/HumanAddr"
+                }
+              ]
+            },
+            "viewing_key": {
+              "description": "viewing key",
+              "type": "string"
+            }
+          }
+        }
+      }
+    }
+  ],
+  "definitions": {
+    "FilterTypes": {
+      "description": "the filter types when viewing an address' auctions",
+      "type": "string",
+      "enum": [
+        "active",
+        "closed",
+        "all"
+      ]
+    },
+    "HumanAddr": {
+      "type": "string"
+    }
+  }
+}
