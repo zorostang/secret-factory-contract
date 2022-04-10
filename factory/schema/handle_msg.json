@@ -4,110 +4,43 @@
   "description": "Handle messages",
   "anyOf": [
     {
-      "description": "CreateAuction will instantiate a new auction",
+      "description": "CreateOffspring will instantiate a new offspring contract",
       "type": "object",
       "required": [
-        "create_auction"
+        "create_offspring"
       ],
       "properties": {
-        "create_auction": {
+        "create_offspring": {
           "type": "object",
           "required": [
-            "bid_contract",
-            "ends_at",
+            "count",
+            "entropy",
             "label",
-            "minimum_bid",
-            "sell_amount",
-            "sell_contract"
+            "owner"
           ],
           "properties": {
-            "bid_contract": {
-              "description": "bid contract code hash and address",
-              "allOf": [
-                {
-                  "$ref": "#/definitions/ContractInfo"
-                }
-              ]
+            "count": {
+              "description": "the count for the counter offspring template",
+              "type": "integer",
+              "format": "int32"
             },
             "description": {
-              "description": "Optional free-form description of the auction (best to avoid double quotes). As an example it could be the date the owner will likely finalize the auction, or a list of other auctions for the same token, etc...",
               "default": null,
               "type": [
                 "string",
                 "null"
               ]
             },
-            "ends_at": {
-              "description": "timestamp after which anyone may close the auction. Timestamp is in seconds since epoch 01/01/1970",
-              "type": "integer",
-              "format": "uint64",
-              "minimum": 0.0
-            },
-            "label": {
-              "description": "String label for the auction",
+            "entropy": {
+              "description": "Used to generate the password for the offspring contract",
               "type": "string"
             },
-            "minimum_bid": {
-              "description": "minimum bid that will be accepted",
-              "allOf": [
-                {
-                  "$ref": "#/definitions/Uint128"
-                }
-              ]
+            "label": {
+              "description": "String used to label when instantiating offspring contract.",
+              "type": "string"
             },
-            "sell_amount": {
-              "description": "amount of tokens being sold",
-              "allOf": [
-                {
-                  "$ref": "#/definitions/Uint128"
-                }
-              ]
-            },
-            "sell_contract": {
-              "description": "sell contract code hash and address",
-              "allOf": [
-                {
-                  "$ref": "#/definitions/ContractInfo"
-                }
-              ]
-            }
-          }
-        }
-      }
-    },
-    {
-      "description": "RegisterAuction saves the auction info of a newly instantiated auction and adds it to the list of active auctions as well as adding it to the seller's list of auctions\n\nOnly auctions will use this function",
-      "type": "object",
-      "required": [
-        "register_auction"
-      ],
-      "properties": {
-        "register_auction": {
-          "type": "object",
-          "required": [
-            "auction",
-            "sell_contract",
-            "seller"
-          ],
-          "properties": {
-            "auction": {
-              "description": "auction information needed by the factory",
-              "allOf": [
-                {
-                  "$ref": "#/definitions/RegisterAuctionInfo"
-                }
-              ]
-            },
-            "sell_contract": {
-              "description": "sell token contract info",
-              "allOf": [
-                {
-                  "$ref": "#/definitions/ContractInfo"
-                }
-              ]
-            },
-            "seller": {
-              "description": "seller/creator of the auction",
+            "owner": {
+              "description": "address of the owner associated to this offspring contract",
               "allOf": [
                 {
                   "$ref": "#/definitions/HumanAddr"
@@ -119,147 +52,93 @@
       }
     },
     {
-      "description": "CloseAuction tells the factory that the auction closed and provides the winning bid if appropriate\n\nOnly auctions will use this function",
+      "description": "RegisterOffspring saves the offspring info of a newly instantiated contract and adds it to the list of active offspring contracts as well\n\nOnly offspring will use this function",
       "type": "object",
       "required": [
-        "close_auction"
+        "register_offspring"
       ],
       "properties": {
-        "close_auction": {
+        "register_offspring": {
+          "type": "object",
+          "required": [
+            "offspring",
+            "owner"
+          ],
+          "properties": {
+            "offspring": {
+              "description": "offspring information needed by the factory",
+              "allOf": [
+                {
+                  "$ref": "#/definitions/RegisterOffspringInfo"
+                }
+              ]
+            },
+            "owner": {
+              "description": "owner of the offspring",
+              "allOf": [
+                {
+                  "$ref": "#/definitions/HumanAddr"
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "description": "DeactivateOffspring tells the factory that the offspring is inactive.",
+      "type": "object",
+      "required": [
+        "deactivate_offspring"
+      ],
+      "properties": {
+        "deactivate_offspring": {
           "type": "object",
           "required": [
             "index",
-            "seller"
+            "owner"
           ],
           "properties": {
-            "bidder": {
-              "description": "winning bidder if the auction ended in a swap",
-              "default": null,
-              "anyOf": [
-                {
-                  "$ref": "#/definitions/HumanAddr"
-                },
-                {
-                  "type": "null"
-                }
-              ]
-            },
             "index": {
-              "description": "auction index",
+              "description": "offspring index",
               "type": "integer",
               "format": "uint32",
               "minimum": 0.0
             },
-            "seller": {
-              "description": "auction seller",
+            "owner": {
+              "description": "offspring's owner",
               "allOf": [
                 {
                   "$ref": "#/definitions/HumanAddr"
                 }
               ]
-            },
-            "winning_bid": {
-              "description": "winning bid if the auction ended in a swap",
-              "default": null,
-              "anyOf": [
-                {
-                  "$ref": "#/definitions/Uint128"
-                },
-                {
-                  "type": "null"
-                }
-              ]
             }
           }
         }
       }
     },
     {
-      "description": "RegisterBidder allows the factory to know an auction has a new bidder so it can update their list of auctions, as well a create a viewing key for the auction if one was set\n\nOnly auctions will use this function",
+      "description": "Allows the admin to add a new offspring contract version",
       "type": "object",
       "required": [
-        "register_bidder"
+        "new_offspring_contract"
       ],
       "properties": {
-        "register_bidder": {
+        "new_offspring_contract": {
           "type": "object",
           "required": [
-            "bidder",
-            "index"
+            "offspring_contract"
           ],
           "properties": {
-            "bidder": {
-              "description": "bidder's address",
-              "allOf": [
-                {
-                  "$ref": "#/definitions/HumanAddr"
-                }
-              ]
-            },
-            "index": {
-              "description": "auction index",
-              "type": "integer",
-              "format": "uint32",
-              "minimum": 0.0
+            "offspring_contract": {
+              "$ref": "#/definitions/OffspringContractInfo"
             }
           }
         }
       }
     },
     {
-      "description": "RemoveBidder allows the factory to know a bidder retracted his bid from an auction\n\nOnly auctions will use this function",
-      "type": "object",
-      "required": [
-        "remove_bidder"
-      ],
-      "properties": {
-        "remove_bidder": {
-          "type": "object",
-          "required": [
-            "bidder",
-            "index"
-          ],
-          "properties": {
-            "bidder": {
-              "description": "bidder's address",
-              "allOf": [
-                {
-                  "$ref": "#/definitions/HumanAddr"
-                }
-              ]
-            },
-            "index": {
-              "description": "auction index",
-              "type": "integer",
-              "format": "uint32",
-              "minimum": 0.0
-            }
-          }
-        }
-      }
-    },
-    {
-      "description": "Allows the admin to add a new auction contract version",
-      "type": "object",
-      "required": [
-        "new_auction_contract"
-      ],
-      "properties": {
-        "new_auction_contract": {
-          "type": "object",
-          "required": [
-            "auction_contract"
-          ],
-          "properties": {
-            "auction_contract": {
-              "$ref": "#/definitions/AuctionContractInfo"
-            }
-          }
-        }
-      }
-    },
-    {
-      "description": "Create a viewing key to be used with all factory and auction authenticated queries",
+      "description": "Create a viewing key to be used with all factory and offspring authenticated queries",
       "type": "object",
       "required": [
         "create_viewing_key"
@@ -279,7 +158,7 @@
       }
     },
     {
-      "description": "Set a viewing key to be used with all factory and auction authenticated queries",
+      "description": "Set a viewing key to be used with all factory and offspring authenticated queries",
       "type": "object",
       "required": [
         "set_viewing_key"
@@ -305,7 +184,7 @@
       }
     },
     {
-      "description": "Allows an admin to start/stop all auction creation",
+      "description": "Allows an admin to start/stop all offspring creation",
       "type": "object",
       "required": [
         "set_status"
@@ -323,56 +202,14 @@
           }
         }
       }
-    },
-    {
-      "description": "Change the closing time and/or minimum bid of an auction\n\nOnly auctions will call this function",
-      "type": "object",
-      "required": [
-        "change_auction_info"
-      ],
-      "properties": {
-        "change_auction_info": {
-          "type": "object",
-          "required": [
-            "index"
-          ],
-          "properties": {
-            "ends_at": {
-              "description": "optional new closing time in seconds since epoch 01/01/1970",
-              "default": null,
-              "type": [
-                "integer",
-                "null"
-              ],
-              "format": "uint64",
-              "minimum": 0.0
-            },
-            "index": {
-              "description": "auction index",
-              "type": "integer",
-              "format": "uint32",
-              "minimum": 0.0
-            },
-            "minimum_bid": {
-              "description": "optional new minimum bid",
-              "default": null,
-              "anyOf": [
-                {
-                  "$ref": "#/definitions/Uint128"
-                },
-                {
-                  "type": "null"
-                }
-              ]
-            }
-          }
-        }
-      }
     }
   ],
   "definitions": {
-    "AuctionContractInfo": {
-      "description": "Info needed to instantiate an auction",
+    "HumanAddr": {
+      "type": "string"
+    },
+    "OffspringContractInfo": {
+      "description": "Info needed to instantiate an offspring",
       "type": "object",
       "required": [
         "code_hash",
@@ -380,103 +217,43 @@
       ],
       "properties": {
         "code_hash": {
-          "description": "code hash of the stored auction contract",
+          "description": "code hash of the stored offspring contract",
           "type": "string"
         },
         "code_id": {
-          "description": "code id of the stored auction contract",
+          "description": "code id of the stored offspring contract",
           "type": "integer",
           "format": "uint64",
           "minimum": 0.0
         }
       }
     },
-    "ContractInfo": {
-      "description": "code hash and address of a contract",
+    "RegisterOffspringInfo": {
+      "description": "active offspring info for storage",
       "type": "object",
       "required": [
-        "address",
-        "code_hash"
-      ],
-      "properties": {
-        "address": {
-          "description": "contract's address",
-          "allOf": [
-            {
-              "$ref": "#/definitions/HumanAddr"
-            }
-          ]
-        },
-        "code_hash": {
-          "description": "contract's code hash string",
-          "type": "string"
-        }
-      }
-    },
-    "HumanAddr": {
-      "type": "string"
-    },
-    "RegisterAuctionInfo": {
-      "description": "active auction info for storage",
-      "type": "object",
-      "required": [
-        "bid_symbol",
-        "ends_at",
         "index",
-        "label",
-        "minimum_bid",
-        "sell_amount",
-        "sell_symbol"
+        "password"
       ],
       "properties": {
-        "bid_symbol": {
-          "description": "bid symbol index",
-          "type": "integer",
-          "format": "uint16",
-          "minimum": 0.0
-        },
-        "ends_at": {
-          "description": "timestamp after which anyone may close the auction. Timestamp is in seconds since epoch 01/01/1970",
-          "type": "integer",
-          "format": "uint64",
-          "minimum": 0.0
-        },
         "index": {
-          "description": "auction index with the factory",
+          "description": "index with the factory",
           "type": "integer",
           "format": "uint32",
           "minimum": 0.0
         },
-        "label": {
-          "description": "auction label",
-          "type": "string"
-        },
-        "minimum_bid": {
-          "description": "minimum bid",
-          "allOf": [
-            {
-              "$ref": "#/definitions/Uint128"
-            }
-          ]
-        },
-        "sell_amount": {
-          "description": "sell amount",
-          "allOf": [
-            {
-              "$ref": "#/definitions/Uint128"
-            }
-          ]
-        },
-        "sell_symbol": {
-          "description": "sell symbol index",
-          "type": "integer",
-          "format": "uint16",
-          "minimum": 0.0
+        "password": {
+          "description": "offspring password",
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "format": "uint8",
+            "minimum": 0.0
+          },
+          "maxItems": 32,
+          "minItems": 32
         }
       }
-    },
-    "Uint128": {
-      "type": "string"
     }
   }
 }

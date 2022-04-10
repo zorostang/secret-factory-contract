@@ -18,13 +18,17 @@ pub struct InitMsg {
     pub count: i32,
 }
 
+/// Handle messages
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum HandleMsg {
     Increment {},
     Reset { count: i32 },
+    // Deactivate can only be called by owner in this template
+    Deactivate {},
 }
 
+/// Queries
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum QueryMsg {
@@ -47,8 +51,11 @@ pub struct ContractInfo {
     pub address: HumanAddr,
 }
 
-// We define a custom struct for each query response
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
-pub struct CountResponse {
-    pub count: i32,
+/// responses to queries
+#[derive(Serialize, Deserialize, Debug, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum QueryAnswer {
+    CountResponse {
+        count: i32,
+    }
 }

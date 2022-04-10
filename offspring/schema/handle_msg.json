@@ -1,6 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "HandleMsg",
+  "description": "Handle messages",
   "anyOf": [
     {
       "type": "object",
@@ -30,6 +31,17 @@
               "format": "int32"
             }
           }
+        }
+      }
+    },
+    {
+      "type": "object",
+      "required": [
+        "deactivate"
+      ],
+      "properties": {
+        "deactivate": {
+          "type": "object"
         }
       }
     }

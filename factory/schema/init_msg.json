@@ -4,26 +4,26 @@
   "description": "Instantiation message",
   "type": "object",
   "required": [
-    "auction_contract",
-    "entropy"
+    "entropy",
+    "offspring_contract"
   ],
   "properties": {
-    "auction_contract": {
-      "description": "auction contract info",
-      "allOf": [
-        {
-          "$ref": "#/definitions/AuctionContractInfo"
-        }
-      ]
-    },
     "entropy": {
       "description": "entropy used to generate prng seed",
       "type": "string"
+    },
+    "offspring_contract": {
+      "description": "offspring contract info",
+      "allOf": [
+        {
+          "$ref": "#/definitions/OffspringContractInfo"
+        }
+      ]
     }
   },
   "definitions": {
-    "AuctionContractInfo": {
-      "description": "Info needed to instantiate an auction",
+    "OffspringContractInfo": {
+      "description": "Info needed to instantiate an offspring",
       "type": "object",
       "required": [
         "code_hash",
@@ -31,11 +31,11 @@
       ],
       "properties": {
         "code_hash": {
-          "description": "code hash of the stored auction contract",
+          "description": "code hash of the stored offspring contract",
           "type": "string"
         },
         "code_id": {
-          "description": "code id of the stored auction contract",
+          "description": "code id of the stored offspring contract",
           "type": "integer",
           "format": "uint64",
           "minimum": 0.0

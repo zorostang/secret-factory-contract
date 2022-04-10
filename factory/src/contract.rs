@@ -263,7 +263,8 @@ fn try_register_offspring<S: Storage, A: Api, Q: Querier>(
 ///
 /// * `deps` - mutable reference to Extern containing all the contract's external dependencies
 /// * `env` - Env of contract's environment
-/// * `index` - offspring index
+/// * `index` - offspring's index in factory
+/// * `owner` - offspring's owner
 fn try_deactivate_offspring<S: Storage, A: Api, Q: Querier>(
     deps: &mut Extern<S, A, Q>,
     env: Env,
