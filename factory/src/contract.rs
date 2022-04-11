@@ -168,6 +168,7 @@ fn try_create_offspring<S: Storage, A: Api, Q: Querier>(
     let initmsg = OffspringInitMsg {
         factory,
         index: config.index,
+        label: label.clone(),
         password: password.clone(),
         owner,
         count,
@@ -196,7 +197,7 @@ fn try_create_offspring<S: Storage, A: Api, Q: Querier>(
 
 /// Returns HandleResult
 ///
-/// Registers the calling offsspring by saving its info and adding it to the appropriate lists
+/// Registers the calling offspring by saving its info and adding it to the appropriate lists
 ///
 /// # Arguments
 ///
@@ -740,7 +741,7 @@ fn display_active_list<S: ReadonlyStorage, A: Api>(
                 if let Some(info) = load_info {
                     display_list.push(OffspringInfo {
                         address: api.human_address(&info.address)?,
-                        password: info.password,
+                        label: info.label.clone(),
                     });
                 }
             }
@@ -785,8 +786,8 @@ fn display_addr_inactive<S: ReadonlyStorage, A: Api>(
                     if let Ok(info) = load_info {
                         inactive_vec.push(InactiveOffspringInfo {
                             index: None,
+                            label: info.label.clone(),
                             address: api.human_address(&info.address)?,
-                            password: info.password,
                         });
                     }
                 }
@@ -834,8 +835,8 @@ fn try_list_inactive<S: Storage, A: Api, Q: Querier>(
             if let Ok(info) = res {
                 inactive_vec.push(InactiveOffspringInfo {
                     index: Some(i as u32),
+                    label: info.label.clone(),
                     address: deps.api.human_address(&info.address)?,
-                    password: info.password,
                 });
             }
         }

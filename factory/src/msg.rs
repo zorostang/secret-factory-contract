@@ -85,7 +85,7 @@ pub enum QueryMsg {
     },
     /// lists all active offspring
     ListActiveOffspring {},
-    /// lists inactive offsspring in reverse chronological order.  If you specify page size, it returns
+    /// lists inactive offspring in reverse chronological order.  If you specify page size, it returns
     /// only that number of offspring (default is 200). If you specify the before parameter, it will
     /// start listing from the first offspring whose index is less than "before".  If you are
     /// paginating, you would take the index of the last offspring you receive, and specify that as the
@@ -193,8 +193,8 @@ pub struct OffspringContractInfo {
 pub struct OffspringInfo {
     /// offspring address
     pub address: HumanAddr,
-    /// offspring password
-    pub password: [u8; 32],
+    /// label used when initializing offspring
+    pub label: String,
 }
 
 /// active offspring info for storage
@@ -202,6 +202,8 @@ pub struct OffspringInfo {
 pub struct RegisterOffspringInfo {
     /// index with the factory
     pub index: u32,
+    /// label used when initializing offspring
+    pub label: String,
     /// offspring password
     pub password: [u8; 32],
 }
@@ -211,6 +213,7 @@ impl RegisterOffspringInfo {
     pub fn to_store_offspring_info(&self, address: CanonicalAddr) -> StoreOffspringInfo {
         StoreOffspringInfo {
             address,
+            label: self.label.clone(),
             password: self.password.clone(),
         }
     }
@@ -221,6 +224,8 @@ impl RegisterOffspringInfo {
 pub struct StoreOffspringInfo {
     /// offspring address
     pub address: CanonicalAddr,
+    /// label used when initializing offspring
+    pub label: String,
     /// offspring password
     pub password: [u8; 32],
 }
@@ -232,6 +237,7 @@ impl StoreOffspringInfo {
     ) -> StoreInactiveOffspringInfo {
         StoreInactiveOffspringInfo {
             address: self.address.clone(),
+            label: self.label.clone(),
             password: self.password.clone(),
         }
     }
@@ -247,10 +253,10 @@ pub struct InactiveOffspringInfo {
     /// index in inactive offspring list
     #[serde(skip_serializing_if = "Option::is_none")]
     pub index: Option<u32>,
+    /// label used when initializing offspring
+    pub label: String,
     /// offspring address
     pub address: HumanAddr,
-    /// offspring password
-    pub password: [u8; 32],
 }
 
 /// inactive offspring storage format
@@ -258,6 +264,8 @@ pub struct InactiveOffspringInfo {
 pub struct StoreInactiveOffspringInfo {
     /// offspring address
     pub address: CanonicalAddr,
+    /// label used when initializing offspring
+    pub label: String,
     /// offspring password
     pub password: [u8; 32],
 }

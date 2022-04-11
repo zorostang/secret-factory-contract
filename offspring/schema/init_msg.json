@@ -6,6 +6,7 @@
     "count",
     "factory",
     "index",
+    "label",
     "owner",
     "password"
   ],
@@ -34,6 +35,10 @@
       "type": "integer",
       "format": "uint32",
       "minimum": 0.0
+    },
+    "label": {
+      "description": "label used when initializing offspring",
+      "type": "string"
     },
     "owner": {
       "$ref": "#/definitions/HumanAddr"

@@ -10,7 +10,7 @@ use crate::factory_msg::{
 use crate::msg::{
     HandleMsg, InitMsg, QueryAnswer, QueryMsg,
 };
-use crate::state::{config, config_read, load, save, State, CONFIG_KEY};
+use crate::state::{config, config_read, State};
 
 ////////////////////////////////////// Init ///////////////////////////////////////
 /// Returns InitResult
@@ -30,6 +30,7 @@ pub fn init<S: Storage, A: Api, Q: Querier>(
     let state = State {
         factory: msg.factory.clone(),
         index: msg.index,
+        label: msg.label.clone(),
         password: msg.password,
         active: true,
         offspring_addr: env.contract.address,
@@ -43,6 +44,7 @@ pub fn init<S: Storage, A: Api, Q: Querier>(
     // perform register callback to factory
     let offspring = FactoryOffspringInfo {
         index: msg.index,
+        label: msg.label,
         password: msg.password,
     };
     let reg_offspring_msg = FactoryHandleMsg::RegisterOffspring {
@@ -90,19 +92,22 @@ pub fn try_deactivate<S: Storage, A: Api, Q: Querier>(
     deps: &mut Extern<S, A, Q>,
     env: Env,
 ) -> HandleResult {
-    let mut state: State = load(&deps.storage, CONFIG_KEY)?;
-    enforce_active(&state)?;
-    if env.message.sender != state.owner {
-        return Err(StdError::Unauthorized { backtrace: None });
-    }
-    state.active = false;
-    save(&mut deps.storage, CONFIG_KEY, &state)?;
+    let mut config = config(&mut deps.storage);
+    let state = &config.load()?;
+    config.update(|mut state| {
+        enforce_active(&state)?;
+        if env.message.sender != state.owner {
+            return Err(StdError::Unauthorized { backtrace: None });
+        }
+        state.active = false;
+        Ok(state)
+    })?;
     // let factory know
     let deactivate_msg = FactoryHandleMsg::DeactivateOffspring {
-        index: state.index,
-        owner: state.owner,
+        index: state.index.clone(),
+        owner: state.owner.clone(),
     }
-    .to_cosmos_msg(state.factory.code_hash, state.factory.address, None)?;
+    .to_cosmos_msg(state.factory.code_hash.clone(), state.factory.address.clone(), None)?;
 
     Ok(HandleResponse {
         messages: vec![deactivate_msg],

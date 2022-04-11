@@ -53,7 +53,7 @@
       }
     },
     {
-      "description": "lists inactive offsspring in reverse chronological order.  If you specify page size, it returns only that number of offspring (default is 200). If you specify the before parameter, it will start listing from the first offspring whose index is less than \"before\".  If you are paginating, you would take the index of the last offspring you receive, and specify that as the before parameter on your next query so it will continue where it left off",
+      "description": "lists inactive offspring in reverse chronological order.  If you specify page size, it returns only that number of offspring (default is 200). If you specify the before parameter, it will start listing from the first offspring whose index is less than \"before\".  If you are paginating, you would take the index of the last offspring you receive, and specify that as the before parameter on your next query so it will continue where it left off",
       "type": "object",
       "required": [
         "list_inactive_offspring"

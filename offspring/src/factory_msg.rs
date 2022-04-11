@@ -33,16 +33,19 @@ impl HandleCallback for FactoryHandleMsg {
     const BLOCK_SIZE: usize = BLOCK_SIZE;
 }
 
-/// the factory's query messages this offspring will call
+/// this corresponds to RegisterOffspringInfo in factory, it is used to register
+/// an offspring in the factory after the callback.
 #[derive(Serialize)]
 pub struct FactoryOffspringInfo {
     /// index with the factory
     pub index: u32,
+    /// label used when initializing offspring
+    pub label: String,
     /// offspring password
     pub password: [u8; 32],
 }
 
-/// Queries
+/// the factory's query messages this offspring will call
 #[derive(Serialize)]
 #[serde(rename_all = "snake_case")]
 pub enum FactoryQueryMsg {

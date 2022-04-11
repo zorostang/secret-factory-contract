@@ -8,6 +8,7 @@
     "count",
     "factory",
     "index",
+    "label",
     "offspring_addr",
     "owner",
     "password"
@@ -42,6 +43,10 @@
       "type": "integer",
       "format": "uint32",
       "minimum": 0.0
+    },
+    "label": {
+      "description": "label used when initializing offspring",
+      "type": "string"
     },
     "offspring_addr": {
       "description": "address of the offspring contract",

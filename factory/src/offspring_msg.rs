@@ -12,6 +12,8 @@ pub struct OffspringInitMsg {
     pub factory: ContractInfo,
     /// offspring's index within the factory
     pub index: u32,
+    /// label used when initializing offspring
+    pub label: String,
     /// String password for the offspring
     pub password: [u8; 32],
 

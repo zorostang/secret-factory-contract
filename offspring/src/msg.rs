@@ -8,6 +8,8 @@ pub struct InitMsg {
     pub factory: ContractInfo,
     /// index within the factory
     pub index: u32,
+    /// label used when initializing offspring
+    pub label: String,
     /// password to be used by factory
     pub password: [u8; 32],
     /// Optional text description of this offspring
