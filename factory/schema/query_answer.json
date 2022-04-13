@@ -1,0 +1,187 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "QueryAnswer",
+  "description": "responses to queries",
+  "anyOf": [
+    {
+      "description": "List the offspring where address is associated.",
+      "type": "object",
+      "required": [
+        "list_my_offspring"
+      ],
+      "properties": {
+        "list_my_offspring": {
+          "type": "object",
+          "properties": {
+            "active": {
+              "description": "lists of the address' active offspring",
+              "type": [
+                "array",
+                "null"
+              ],
+              "items": {
+                "$ref": "#/definitions/OffspringInfo"
+              }
+            },
+            "inactive": {
+              "description": "lists of the address' inactive offspring",
+              "type": [
+                "array",
+                "null"
+              ],
+              "items": {
+                "$ref": "#/definitions/InactiveOffspringInfo"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "description": "List active offspring sorted by pair",
+      "type": "object",
+      "required": [
+        "list_active_offspring"
+      ],
+      "properties": {
+        "list_active_offspring": {
+          "type": "object",
+          "properties": {
+            "active": {
+              "description": "active offspring sorted by pair",
+              "type": [
+                "array",
+                "null"
+              ],
+              "items": {
+                "$ref": "#/definitions/OffspringInfo"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "description": "List inactive offspring in reverse chronological order",
+      "type": "object",
+      "required": [
+        "list_inactive_offspring"
+      ],
+      "properties": {
+        "list_inactive_offspring": {
+          "type": "object",
+          "properties": {
+            "inactive": {
+              "description": "inactive offspring in reverse chronological order",
+              "type": [
+                "array",
+                "null"
+              ],
+              "items": {
+                "$ref": "#/definitions/InactiveOffspringInfo"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "description": "Viewing Key Error",
+      "type": "object",
+      "required": [
+        "viewing_key_error"
+      ],
+      "properties": {
+        "viewing_key_error": {
+          "type": "object",
+          "required": [
+            "error"
+          ],
+          "properties": {
+            "error": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    {
+      "description": "result of authenticating address/key pair",
+      "type": "object",
+      "required": [
+        "is_key_valid"
+      ],
+      "properties": {
+        "is_key_valid": {
+          "type": "object",
+          "required": [
+            "is_valid"
+          ],
+          "properties": {
+            "is_valid": {
+              "type": "boolean"
+            }
+          }
+        }
+      }
+    }
+  ],
+  "definitions": {
+    "HumanAddr": {
+      "type": "string"
+    },
+    "InactiveOffspringInfo": {
+      "description": "inactive offspring display info",
+      "type": "object",
+      "required": [
+        "address",
+        "label"
+      ],
+      "properties": {
+        "address": {
+          "description": "offspring address",
+          "allOf": [
+            {
+              "$ref": "#/definitions/HumanAddr"
+            }
+          ]
+        },
+        "index": {
+          "description": "index in inactive offspring list",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint32",
+          "minimum": 0.0
+        },
+        "label": {
+          "description": "label used when initializing offspring",
+          "type": "string"
+        }
+      }
+    },
+    "OffspringInfo": {
+      "description": "active offspring display info",
+      "type": "object",
+      "required": [
+        "address",
+        "label"
+      ],
+      "properties": {
+        "address": {
+          "description": "offspring address",
+          "allOf": [
+            {
+              "$ref": "#/definitions/HumanAddr"
+            }
+          ]
+        },
+        "label": {
+          "description": "label used when initializing offspring",
+          "type": "string"
+        }
+      }
+    }
+  }
+}

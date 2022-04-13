@@ -1,0 +1,46 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "InitMsg",
+  "description": "Instantiation message",
+  "type": "object",
+  "required": [
+    "entropy",
+    "offspring_contract"
+  ],
+  "properties": {
+    "entropy": {
+      "description": "entropy used to generate prng seed",
+      "type": "string"
+    },
+    "offspring_contract": {
+      "description": "offspring contract info",
+      "allOf": [
+        {
+          "$ref": "#/definitions/OffspringContractInfo"
+        }
+      ]
+    }
+  },
+  "definitions": {
+    "OffspringContractInfo": {
+      "description": "Info needed to instantiate an offspring",
+      "type": "object",
+      "required": [
+        "code_hash",
+        "code_id"
+      ],
+      "properties": {
+        "code_hash": {
+          "description": "code hash of the stored offspring contract",
+          "type": "string"
+        },
+        "code_id": {
+          "description": "code id of the stored offspring contract",
+          "type": "integer",
+          "format": "uint64",
+          "minimum": 0.0
+        }
+      }
+    }
+  }
+}

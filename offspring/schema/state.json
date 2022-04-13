@@ -1,0 +1,106 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "State",
+  "description": "State of the offspring contract",
+  "type": "object",
+  "required": [
+    "active",
+    "count",
+    "factory",
+    "index",
+    "label",
+    "offspring_addr",
+    "owner",
+    "password"
+  ],
+  "properties": {
+    "active": {
+      "description": "this is relevant if the factory is listing offsprings by activity status.",
+      "type": "boolean"
+    },
+    "count": {
+      "description": "the count for the counter",
+      "type": "integer",
+      "format": "int32"
+    },
+    "description": {
+      "description": "Optional text description of this offspring",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "factory": {
+      "description": "factory code hash and address",
+      "allOf": [
+        {
+          "$ref": "#/definitions/ContractInfo"
+        }
+      ]
+    },
+    "index": {
+      "description": "index within the factory",
+      "type": "integer",
+      "format": "uint32",
+      "minimum": 0.0
+    },
+    "label": {
+      "description": "label used when initializing offspring",
+      "type": "string"
+    },
+    "offspring_addr": {
+      "description": "address of the offspring contract",
+      "allOf": [
+        {
+          "$ref": "#/definitions/HumanAddr"
+        }
+      ]
+    },
+    "owner": {
+      "description": "address of the owner associated to this offspring contract",
+      "allOf": [
+        {
+          "$ref": "#/definitions/HumanAddr"
+        }
+      ]
+    },
+    "password": {
+      "description": "used by factory for authentication",
+      "type": "array",
+      "items": {
+        "type": "integer",
+        "format": "uint8",
+        "minimum": 0.0
+      },
+      "maxItems": 32,
+      "minItems": 32
+    }
+  },
+  "definitions": {
+    "ContractInfo": {
+      "description": "code hash and address of a contract",
+      "type": "object",
+      "required": [
+        "address",
+        "code_hash"
+      ],
+      "properties": {
+        "address": {
+          "description": "contract's address",
+          "allOf": [
+            {
+              "$ref": "#/definitions/HumanAddr"
+            }
+          ]
+        },
+        "code_hash": {
+          "description": "contract's code hash string",
+          "type": "string"
+        }
+      }
+    },
+    "HumanAddr": {
+      "type": "string"
+    }
+  }
+}

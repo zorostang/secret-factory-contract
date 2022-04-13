@@ -1,0 +1,264 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "HandleMsg",
+  "description": "Handle messages",
+  "anyOf": [
+    {
+      "description": "CreateOffspring will instantiate a new offspring contract",
+      "type": "object",
+      "required": [
+        "create_offspring"
+      ],
+      "properties": {
+        "create_offspring": {
+          "type": "object",
+          "required": [
+            "count",
+            "entropy",
+            "label",
+            "owner"
+          ],
+          "properties": {
+            "count": {
+              "description": "the count for the counter offspring template",
+              "type": "integer",
+              "format": "int32"
+            },
+            "description": {
+              "default": null,
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "entropy": {
+              "description": "Used to generate the password for the offspring contract",
+              "type": "string"
+            },
+            "label": {
+              "description": "String used to label when instantiating offspring contract.",
+              "type": "string"
+            },
+            "owner": {
+              "description": "address of the owner associated to this offspring contract",
+              "allOf": [
+                {
+                  "$ref": "#/definitions/HumanAddr"
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "description": "RegisterOffspring saves the offspring info of a newly instantiated contract and adds it to the list of active offspring contracts as well\n\nOnly offspring will use this function",
+      "type": "object",
+      "required": [
+        "register_offspring"
+      ],
+      "properties": {
+        "register_offspring": {
+          "type": "object",
+          "required": [
+            "offspring",
+            "owner"
+          ],
+          "properties": {
+            "offspring": {
+              "description": "offspring information needed by the factory",
+              "allOf": [
+                {
+                  "$ref": "#/definitions/RegisterOffspringInfo"
+                }
+              ]
+            },
+            "owner": {
+              "description": "owner of the offspring",
+              "allOf": [
+                {
+                  "$ref": "#/definitions/HumanAddr"
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "description": "DeactivateOffspring tells the factory that the offspring is inactive.",
+      "type": "object",
+      "required": [
+        "deactivate_offspring"
+      ],
+      "properties": {
+        "deactivate_offspring": {
+          "type": "object",
+          "required": [
+            "index",
+            "owner"
+          ],
+          "properties": {
+            "index": {
+              "description": "offspring index",
+              "type": "integer",
+              "format": "uint32",
+              "minimum": 0.0
+            },
+            "owner": {
+              "description": "offspring's owner",
+              "allOf": [
+                {
+                  "$ref": "#/definitions/HumanAddr"
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "description": "Allows the admin to add a new offspring contract version",
+      "type": "object",
+      "required": [
+        "new_offspring_contract"
+      ],
+      "properties": {
+        "new_offspring_contract": {
+          "type": "object",
+          "required": [
+            "offspring_contract"
+          ],
+          "properties": {
+            "offspring_contract": {
+              "$ref": "#/definitions/OffspringContractInfo"
+            }
+          }
+        }
+      }
+    },
+    {
+      "description": "Create a viewing key to be used with all factory and offspring authenticated queries",
+      "type": "object",
+      "required": [
+        "create_viewing_key"
+      ],
+      "properties": {
+        "create_viewing_key": {
+          "type": "object",
+          "required": [
+            "entropy"
+          ],
+          "properties": {
+            "entropy": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    {
+      "description": "Set a viewing key to be used with all factory and offspring authenticated queries",
+      "type": "object",
+      "required": [
+        "set_viewing_key"
+      ],
+      "properties": {
+        "set_viewing_key": {
+          "type": "object",
+          "required": [
+            "key"
+          ],
+          "properties": {
+            "key": {
+              "type": "string"
+            },
+            "padding": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "description": "Allows an admin to start/stop all offspring creation",
+      "type": "object",
+      "required": [
+        "set_status"
+      ],
+      "properties": {
+        "set_status": {
+          "type": "object",
+          "required": [
+            "stop"
+          ],
+          "properties": {
+            "stop": {
+              "type": "boolean"
+            }
+          }
+        }
+      }
+    }
+  ],
+  "definitions": {
+    "HumanAddr": {
+      "type": "string"
+    },
+    "OffspringContractInfo": {
+      "description": "Info needed to instantiate an offspring",
+      "type": "object",
+      "required": [
+        "code_hash",
+        "code_id"
+      ],
+      "properties": {
+        "code_hash": {
+          "description": "code hash of the stored offspring contract",
+          "type": "string"
+        },
+        "code_id": {
+          "description": "code id of the stored offspring contract",
+          "type": "integer",
+          "format": "uint64",
+          "minimum": 0.0
+        }
+      }
+    },
+    "RegisterOffspringInfo": {
+      "description": "active offspring info for storage",
+      "type": "object",
+      "required": [
+        "index",
+        "label",
+        "password"
+      ],
+      "properties": {
+        "index": {
+          "description": "index with the factory",
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0.0
+        },
+        "label": {
+          "description": "label used when initializing offspring",
+          "type": "string"
+        },
+        "password": {
+          "description": "offspring password",
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "format": "uint8",
+            "minimum": 0.0
+          },
+          "maxItems": 32,
+          "minItems": 32
+        }
+      }
+    }
+  }
+}
