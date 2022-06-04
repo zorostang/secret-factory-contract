@@ -43,4 +43,4 @@ cosmwasm-storage = { version = "0.10", package = "secret-cosmwasm-storage" }
 secret-toolkit = { git = "https://github.com/enigmampc/secret-toolkit" }
 
 [dev-dependencies]
-cosmwasm-schema = "0.10.1"
+cosmwasm-schema = { git = "https://github.com/enigmampc/SecretNetwork", tag = "v1.3.1" }

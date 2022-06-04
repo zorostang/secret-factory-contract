@@ -5,7 +5,7 @@ use cosmwasm_std::{
 
 use cosmwasm_storage::{PrefixedStorage, ReadonlyPrefixedStorage};
 
-use std::collections::{HashMap, HashSet};
+use std::collections::{HashSet};
 
 use secret_toolkit::{
     storage::{AppendStore, AppendStoreMut},
@@ -49,7 +49,6 @@ pub fn init<S: Storage, A: Api, Q: Querier>(
 
     let config = Config {
         version: msg.offspring_contract,
-        symdecmap: HashMap::new(),
         index: 0,
         stopped: false,
         admin: deps.api.canonical_address(&env.message.sender)?,

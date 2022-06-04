@@ -1,5 +1,4 @@
 use std::any::type_name;
-use std::collections::HashMap;
 
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 
@@ -36,8 +35,6 @@ pub const BLOCK_SIZE: usize = 256;
 pub struct Config {
     /// code hash and address of the offspring contract
     pub version: OffspringContractInfo,
-    /// map token contract address to symdec list index
-    pub symdecmap: HashMap<Vec<u8>, u16>,
     /// unique id to give created offspring
     pub index: u32,
     /// factory's create offspring status

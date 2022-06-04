@@ -89,7 +89,7 @@ checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
 [[package]]
 name = "cosmwasm-schema"
 version = "0.10.0"
-source = "git+https://github.com/enigmampc/SecretNetwork?tag=v1.0.0#490fba9243e6cb291462e9d3c1bcbd1975c0df1e"
+source = "git+https://github.com/enigmampc/SecretNetwork?tag=v1.3.1#d40b85ac35aa32e5a928d6c053f02cb2b10e1e97"
 dependencies = [
  "schemars",
  "serde_json",
