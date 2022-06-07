@@ -4,13 +4,13 @@ Factory contracts are useful for scaling your web3 app when you need to create n
 
 This repo contains two template contracts. The factory contract template is responsible for creating offspring contracts, storing them, and listing them in queries. The factory contract also stores the viewing key of the users so that a user does not need to create multiple viewing keys for each individual offspring they interract with.
 
-The factory portion of this template is based on [secret-auction-factory by Baedrik](https://github.com/baedrik/secret-auction-factory) that was built for [Secret Auctions](https://auctions.scrt.network/). This template makes no reference to auction specific features, and is meant to be customized for a specific use case.
+This template makes no reference to auction specific features, and is meant to be customized for a specific use case.
 
 ## **About the Contracts** ##
 
-The offspring contract is based on the [simple counter template](https://github.com/scrtlabs/secret-template) that everyone should be familiar with some additional features to make it a suitable offspring contract for a factory. Its state now stores some extra fields that are useful for an offspring contract.
+The offspring contract is based on the [simple counter template](https://github.com/scrtlabs/secret-template) that everyone should be familiar with. Some additional features were added to it to make it a suitable offspring contract for a factory. Its state now stores some extra fields that are useful for an offspring contract.
 
-In order for an offspring to be initialized and registered in the factory, the factory is the one that must be initializing the offspring contract. The registration of the offspring contract is done by a post init callback which carries with it a password to ensure that offspring contracts not initialized by the factory cannot be registered.
+The factory registers the offsprings it creates. In order for an offspring to be initialized and registered in the factory, the factory is the one that must be initializing the offspring contract. The registration of the offspring contract is done by a post init callback which carries with it a password to ensure that offspring contracts not initialized by the factory cannot be registered.
 
 The state of the offspring contract has a boolean variable called `active` which is initialized as true. I believe many implementations of the factory model will implement some sense of deactivation/finalization of the offspring contract, such as a finalized auction. That's why offspring are split into two groups in the factory, that is `active` and `inactive`.
 
@@ -101,6 +101,11 @@ This returns a list of all active offspring information (which consists of their
 {"list_active_offspring":{}}
 ```
 
+| **Name**   | **Type**     | **Description**                               | **Optional** | **Value If Omitted** |
+|------------|--------------|-----------------------------------------------|--------------|----------------------|
+| start_page | number (u32) | starting page number for the listed offspring |      Yes     |           0          |
+|  page_size | number (u32) |   number of offspring to return in this page  |      Yes     |          200         |
+
 **Response:**
 
 ```json
@@ -118,18 +123,23 @@ This returns a list of all active offspring information (which consists of their
 
 **Request:**
 
-|  **Name** |   **Type**   |                          **Description**                          | **Optional** | **Value If Omitted** |
-|:---------:|:------------:|:-----------------------------------------------------------------:|:------------:|:--------------------:|
-|   before  | number (u32) | only show offspring with inactive index less than specified value |      Yes     | None                 |
-| page_size | number (u32) | number of offspring to return                                     |      Yes     | None                 |
+| **Name**   | **Type**     | **Description**                               | **Optional** | **Value If Omitted** |
+|------------|--------------|-----------------------------------------------|--------------|----------------------|
+| start_page | number (u32) | starting page number for the listed offspring |      Yes     |           0          |
+|  page_size | number (u32) |   number of offspring to return in this page  |      Yes     |          200         |
 
 **Response:**
 
 ```json
 {
-    "list_inactive_offspring":{"inactive":[
-        {"index":0,"label":"counter1","address":"secret10pyejy66429refv3g35g2t7am0was7ya6hvrzf"}
-    ]}
+    "list_inactive_offspring": {
+        "inactive": [
+            {
+                "address": "secret10pyejy66429refv3g35g2t7am0was7ya6hvrzf",
+                "label": "counter1"
+            }
+        ]
+    }
 }
 ```
 
@@ -139,11 +149,13 @@ This returns a list of all active offspring information (which consists of their
 
 **Request:**
 
-|   **Name**  |                **Type**               |                    **Description**                    | **Optional** | **Value If Omitted** |
-|:-----------:|:-------------------------------------:|:-----------------------------------------------------:|:------------:|:--------------------:|
-|   address   |           String (HumanAddr)          | the address whose offspring are queried               |      No      |                      |
-| viewing_key |                 String                | viewing key of the address                            |      No      |                      |
-|    filter   | one of "active", "inactive", or "all" | filter for listing only active or inactive offspring. |      Yes     |         "all"        |
+| **Name**    | **Type**                              | **Description**                                                                                 | **Optional** | **Value If Omitted** |
+|-------------|---------------------------------------|-------------------------------------------------------------------------------------------------|--------------|----------------------|
+|   address   |           String (HumanAddr)          |                             the address whose offspring are queried                             |      No      |                      |
+| viewing_key |                 String                |                                    viewing key of the address                                   |      No      |                      |
+|    filter   | one of "active", "inactive", or "all" |                      filter for listing only active or inactive offspring.                      |      Yes     |         "all"        |
+|  start_page |              number (u32)             | starting page number for the listed offspring (individually for both active and inactive lists) |      Yes     |           0          |
+|  page_size  |              number (u32)             |                            number of offspring to return in this page                           |      Yes     |          200         |
 
 **Response:**
 

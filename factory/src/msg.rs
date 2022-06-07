@@ -87,7 +87,7 @@ pub enum QueryMsg {
         #[serde(default)]
         page_size: Option<u32>,
     },
-    /// lists all active offspring
+    /// lists all active offspring in reverse chronological order
     ListActiveOffspring {
         /// start page for the offsprings returned and listed. Default: 0
         #[serde(default)]
