@@ -29,7 +29,6 @@ pub fn init<S: Storage, A: Api, Q: Querier>(
 ) -> InitResult {
     let state = State {
         factory: msg.factory.clone(),
-        index: msg.index,
         label: msg.label.clone(),
         password: msg.password,
         active: true,
@@ -43,7 +42,6 @@ pub fn init<S: Storage, A: Api, Q: Querier>(
 
     // perform register callback to factory
     let offspring = FactoryOffspringInfo {
-        index: msg.index,
         label: msg.label,
         password: msg.password,
     };
@@ -104,7 +102,6 @@ pub fn try_deactivate<S: Storage, A: Api, Q: Querier>(
     })?;
     // let factory know
     let deactivate_msg = FactoryHandleMsg::DeactivateOffspring {
-        index: state.index.clone(),
         owner: state.owner.clone(),
     }
     .to_cosmos_msg(state.factory.code_hash.clone(), state.factory.address.clone(), None)?;

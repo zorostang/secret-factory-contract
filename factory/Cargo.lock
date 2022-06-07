@@ -118,7 +118,7 @@ checksum = "fea41bba32d969b513997752735605054bc0dfa92b4c56bf1189f2e174be7a10"
 
 [[package]]
 name = "factory"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "base64 0.12.3",
  "cosmwasm-schema",
@@ -128,8 +128,9 @@ dependencies = [
  "secret-cosmwasm-std",
  "secret-cosmwasm-storage",
  "secret-toolkit",
+ "secret-toolkit-incubator 0.3.0 (git+https://github.com/srdtrk/secret-toolkit)",
+ "secret-toolkit-viewing-key",
  "serde",
- "serde-json-wasm 0.4.1",
  "sha2",
  "snafu",
  "subtle",
@@ -269,7 +270,7 @@ dependencies = [
  "base64 0.11.0",
  "schemars",
  "serde",
- "serde-json-wasm 0.2.1",
+ "serde-json-wasm",
  "snafu",
 ]
 
@@ -289,9 +290,40 @@ version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9a117a6fadadd1d2692df73f19fc3319ec4db59c76f364ce1e1a0f3bd0bbead8"
 dependencies = [
- "secret-toolkit-serialization",
+ "secret-toolkit-incubator 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "secret-toolkit-serialization 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "secret-toolkit-storage",
  "secret-toolkit-utils",
+]
+
+[[package]]
+name = "secret-toolkit-crypto"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "020d3ef7f595e37fed1684d3f97b546a412138da88ea26f2e50e5309f2a0c2be"
+dependencies = [
+ "rand_chacha",
+ "rand_core",
+ "secret-cosmwasm-std",
+ "sha2",
+]
+
+[[package]]
+name = "secret-toolkit-incubator"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5fe6518ad42503c73fff77477712edbfa5394281fb972b0b89f3fe7a7b43cd19"
+
+[[package]]
+name = "secret-toolkit-incubator"
+version = "0.3.0"
+source = "git+https://github.com/srdtrk/secret-toolkit#a7b43e329537a525f6d3a557dd9a258cc28a5a58"
+dependencies = [
+ "secret-cosmwasm-std",
+ "secret-cosmwasm-storage",
+ "secret-toolkit-serialization 0.3.0 (git+https://github.com/srdtrk/secret-toolkit)",
+ "serde",
+ "siphasher",
 ]
 
 [[package]]
@@ -307,6 +339,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "secret-toolkit-serialization"
+version = "0.3.0"
+source = "git+https://github.com/srdtrk/secret-toolkit#a7b43e329537a525f6d3a557dd9a258cc28a5a58"
+dependencies = [
+ "bincode2",
+ "schemars",
+ "secret-cosmwasm-std",
+ "serde",
+]
+
+[[package]]
 name = "secret-toolkit-storage"
 version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -314,7 +357,7 @@ checksum = "fb688dc8c8b882bcca2176005e5c3344ba0229f7b200c12d06202163b0e13773"
 dependencies = [
  "secret-cosmwasm-std",
  "secret-cosmwasm-storage",
- "secret-toolkit-serialization",
+ "secret-toolkit-serialization 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde",
 ]
 
@@ -331,6 +374,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "secret-toolkit-viewing-key"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b7977a8a77b35ec03f311d2c782c33dddb9645bb584c730a562d9d0bd3364fa1"
+dependencies = [
+ "base64 0.11.0",
+ "schemars",
+ "secret-cosmwasm-std",
+ "secret-cosmwasm-storage",
+ "secret-toolkit-crypto",
+ "secret-toolkit-utils",
+ "serde",
+ "subtle",
+]
+
+[[package]]
 name = "serde"
 version = "1.0.136"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -344,15 +403,6 @@ name = "serde-json-wasm"
 version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7294d94d390f1d2334697c065ea591d7074c676e2d20aa6f1df752fced29823f"
-dependencies = [
- "serde",
-]
-
-[[package]]
-name = "serde-json-wasm"
-version = "0.4.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "479b4dbc401ca13ee8ce902851b834893251404c4f3c65370a49e047a6be09a5"
 dependencies = [
  "serde",
 ]
@@ -402,6 +452,12 @@ dependencies = [
  "digest",
  "opaque-debug",
 ]
+
+[[package]]
+name = "siphasher"
+version = "0.3.10"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7bd3e3206899af3f8b12af284fafc038cc1dc2b41d1b89dd17297221c5d225de"
 
 [[package]]
 name = "snafu"

@@ -1,7 +1,7 @@
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-use cosmwasm_std::{CanonicalAddr, HumanAddr};
+use cosmwasm_std::{HumanAddr};
 
 /// Instantiation message
 #[derive(Serialize, Deserialize, JsonSchema)]
@@ -44,8 +44,6 @@ pub enum HandleMsg {
 
     /// DeactivateOffspring tells the factory that the offspring is inactive.
     DeactivateOffspring {
-        /// offspring index
-        index: u32,
         /// offspring's owner
         owner: HumanAddr,
     },
@@ -82,19 +80,28 @@ pub enum QueryMsg {
         /// optional filter for only active or inactive offspring.  If not specified, lists all
         #[serde(default)]
         filter: Option<FilterTypes>,
+        /// start page for the offsprings returned and listed (applies to both active and inactive). Default: 0
+        #[serde(default)]
+        start_page: Option<u32>,
+        /// optional number of offspring to return in this page (applies to both active and inactive). Default: DEFAULT_PAGE_SIZE
+        #[serde(default)]
+        page_size: Option<u32>,
     },
     /// lists all active offspring
-    ListActiveOffspring {},
-    /// lists inactive offspring in reverse chronological order.  If you specify page size, it returns
-    /// only that number of offspring (default is 200). If you specify the before parameter, it will
-    /// start listing from the first offspring whose index is less than "before".  If you are
-    /// paginating, you would take the index of the last offspring you receive, and specify that as the
-    /// before parameter on your next query so it will continue where it left off
-    ListInactiveOffspring {
-        /// optionally only show offspring with index less than specified value
+    ListActiveOffspring {
+        /// start page for the offsprings returned and listed. Default: 0
         #[serde(default)]
-        before: Option<u32>,
-        /// optional number of offspring to return
+        start_page: Option<u32>,
+        /// optional number of offspring to return in this page. Default: DEFAULT_PAGE_SIZE
+        #[serde(default)]
+        page_size: Option<u32>,
+    },
+    /// lists inactive offspring in reverse chronological order.
+    ListInactiveOffspring {
+        /// start page for the offsprings returned and listed. Default: 0
+        #[serde(default)]
+        start_page: Option<u32>,
+        /// optional number of offspring to return in this page. Default: DEFAULT_PAGE_SIZE
         #[serde(default)]
         page_size: Option<u32>,
     },
@@ -124,22 +131,20 @@ pub enum QueryAnswer {
     ListMyOffspring {
         /// lists of the address' active offspring
         #[serde(skip_serializing_if = "Option::is_none")]
-        active: Option<Vec<OffspringInfo>>,
+        active: Option<Vec<StoreOffspringInfo>>,
         /// lists of the address' inactive offspring
         #[serde(skip_serializing_if = "Option::is_none")]
-        inactive: Option<Vec<InactiveOffspringInfo>>,
+        inactive: Option<Vec<StoreInactiveOffspringInfo>>,
     },
     /// List active offspring sorted by pair
     ListActiveOffspring {
         /// active offspring sorted by pair
-        #[serde(skip_serializing_if = "Option::is_none")]
-        active: Option<Vec<OffspringInfo>>,
+        active: Vec<StoreOffspringInfo>,
     },
     /// List inactive offspring in reverse chronological order
     ListInactiveOffspring {
         /// inactive offspring in reverse chronological order
-        #[serde(skip_serializing_if = "Option::is_none")]
-        inactive: Option<Vec<InactiveOffspringInfo>>,
+        inactive: Vec<StoreInactiveOffspringInfo>,
     },
     /// Viewing Key Error
     ViewingKeyError { error: String },
@@ -188,8 +193,8 @@ pub struct OffspringContractInfo {
     pub code_hash: String,
 }
 
-/// active offspring display info
-#[derive(Serialize, Deserialize, JsonSchema)]
+/// active offspring info
+#[derive(Serialize, Deserialize, Clone, JsonSchema)]
 pub struct OffspringInfo {
     /// offspring address
     pub address: HumanAddr,
@@ -197,11 +202,9 @@ pub struct OffspringInfo {
     pub label: String,
 }
 
-/// active offspring info for storage
+/// active offspring info for storage/display
 #[derive(Serialize, Deserialize, JsonSchema, Debug)]
 pub struct RegisterOffspringInfo {
-    /// index with the factory
-    pub index: u32,
     /// label used when initializing offspring
     pub label: String,
     /// offspring password
@@ -210,24 +213,24 @@ pub struct RegisterOffspringInfo {
 
 impl RegisterOffspringInfo {
     /// takes the register offspring information and creates a store offspring info struct
-    pub fn to_store_offspring_info(&self, address: CanonicalAddr) -> StoreOffspringInfo {
+    pub fn to_store_offspring_info(&self, address: HumanAddr) -> StoreOffspringInfo {
         StoreOffspringInfo {
             address,
             label: self.label.clone(),
-            password: self.password.clone(),
         }
     }
 }
 
-/// active offspring info for storage
-#[derive(Serialize, Deserialize, JsonSchema, Debug)]
+// In general, data that is stored for user display may be different from the data used
+// for internal functions of the smart contract. That is why we have StoreOffspringInfo.
+
+/// active offspring info for storage/display
+#[derive(Serialize, Deserialize, Clone, JsonSchema, Debug)]
 pub struct StoreOffspringInfo {
     /// offspring address
-    pub address: CanonicalAddr,
+    pub address: HumanAddr,
     /// label used when initializing offspring
     pub label: String,
-    /// offspring password
-    pub password: [u8; 32],
 }
 
 impl StoreOffspringInfo {
@@ -238,34 +241,28 @@ impl StoreOffspringInfo {
         StoreInactiveOffspringInfo {
             address: self.address.clone(),
             label: self.label.clone(),
-            password: self.password.clone(),
         }
     }
 }
 
 // in general, when an offspring contract is deactivated, it may require
-// extra data to be stored with it, and thus, in theory InactiveOffspringInfo
-// could be different to OffspringInfo. That's why they are two different structs.
+// different data to be stored with it, and thus, in theory InactiveOffspringInfo
+// could be different to OffspringInfo. That's why we have InactiveOffspringInfo.
 
-/// inactive offspring display info
-#[derive(Serialize, Deserialize, JsonSchema)]
+/// inactive offspring info
+#[derive(Serialize, Deserialize, JsonSchema, Clone)]
 pub struct InactiveOffspringInfo {
-    /// index in inactive offspring list
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub index: Option<u32>,
     /// label used when initializing offspring
     pub label: String,
     /// offspring address
     pub address: HumanAddr,
 }
 
-/// inactive offspring storage format
-#[derive(Serialize, Deserialize)]
+/// inactive offspring storage/display format
+#[derive(Serialize, Deserialize, JsonSchema, Clone)]
 pub struct StoreInactiveOffspringInfo {
     /// offspring address
-    pub address: CanonicalAddr,
+    pub address: HumanAddr,
     /// label used when initializing offspring
     pub label: String,
-    /// offspring password
-    pub password: [u8; 32],
 }

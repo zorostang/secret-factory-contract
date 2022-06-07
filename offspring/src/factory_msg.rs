@@ -22,8 +22,6 @@ pub enum FactoryHandleMsg {
 
     /// DeactivateOffspring tells the factory that the offspring is inactive.
     DeactivateOffspring {
-        /// offspring index
-        index: u32,
         /// offspring's owner
         owner: HumanAddr,
     },
@@ -37,8 +35,6 @@ impl HandleCallback for FactoryHandleMsg {
 /// an offspring in the factory after the callback.
 #[derive(Serialize)]
 pub struct FactoryOffspringInfo {
-    /// index with the factory
-    pub index: u32,
     /// label used when initializing offspring
     pub label: String,
     /// offspring password

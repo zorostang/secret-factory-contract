@@ -7,7 +7,6 @@
     "active",
     "count",
     "factory",
-    "index",
     "label",
     "offspring_addr",
     "owner",
@@ -37,12 +36,6 @@
           "$ref": "#/definitions/ContractInfo"
         }
       ]
-    },
-    "index": {
-      "description": "index within the factory",
-      "type": "integer",
-      "format": "uint32",
-      "minimum": 0.0
     },
     "label": {
       "description": "label used when initializing offspring",

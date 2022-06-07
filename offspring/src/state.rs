@@ -20,8 +20,6 @@ pub const BLOCK_SIZE: usize = 256;
 pub struct State {
     /// factory code hash and address
     pub factory: ContractInfo,
-    /// index within the factory
-    pub index: u32,
     /// label used when initializing offspring
     pub label: String,
     /// this is relevant if the factory is listing offsprings by activity status.

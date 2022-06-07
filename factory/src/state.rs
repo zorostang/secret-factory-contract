@@ -15,7 +15,7 @@ pub const PREFIX_OWNERS_ACTIVE: &[u8] = b"ownersactive";
 /// prefix for storage of an active offspring info
 pub const PREFIX_ACTIVE_INFO: &[u8] = b"activeinfo";
 /// prefix for storage of a inactive offspring info
-pub const PREFIX_INACTIVE_INFO: &[u8] = b"inactiveinfo";
+pub const INACTIVE_KEY: &[u8] = b"inactiveinfo";
 /// prefix for viewing keys
 pub const PREFIX_VIEW_KEY: &[u8] = b"viewingkey";
 /// storage key for prng seed
@@ -29,14 +29,14 @@ pub const PENDING_KEY: &[u8] = b"pending";
 /// pad handle responses and log attributes to blocks of 256 bytes to prevent leaking info based on
 /// response size
 pub const BLOCK_SIZE: usize = 256;
+/// the default number of offspring listed during queries
+pub const DEFAULT_PAGE_SIZE: u32 = 200;
 
 /// grouping the data primarily used when creating a new offspring
 #[derive(Serialize, Deserialize)]
 pub struct Config {
     /// code hash and address of the offspring contract
     pub version: OffspringContractInfo,
-    /// unique id to give created offspring
-    pub index: u32,
     /// factory's create offspring status
     pub stopped: bool,
     /// address of the factory admin

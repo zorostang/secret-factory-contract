@@ -5,24 +5,22 @@ use cosmwasm_std::{
 
 use cosmwasm_storage::{PrefixedStorage, ReadonlyPrefixedStorage};
 
-use std::collections::{HashSet};
-
 use secret_toolkit::{
-    storage::{AppendStore, AppendStoreMut},
     utils::{pad_handle_result, pad_query_result, InitCallback},
 };
 
-use crate::rand::sha_256;
+use secret_toolkit_incubator::{CashMap, ReadOnlyCashMap};
+
+use crate::{rand::sha_256, state::DEFAULT_PAGE_SIZE};
 use crate::state::{
-    load, may_load, remove, save, Config, ACTIVE_KEY, BLOCK_SIZE, CONFIG_KEY, PENDING_KEY,
-    PREFIX_ACTIVE_INFO, PREFIX_INACTIVE_INFO, PREFIX_OWNERS_ACTIVE, PREFIX_OWNERS_INACTIVE,
+    load, may_load, remove, save, Config, ACTIVE_KEY, BLOCK_SIZE, CONFIG_KEY, PENDING_KEY, INACTIVE_KEY, PREFIX_OWNERS_ACTIVE, PREFIX_OWNERS_INACTIVE,
     PREFIX_VIEW_KEY, PRNG_SEED_KEY,
 };
 use crate::viewing_key::{ViewingKey, VIEWING_KEY_SIZE};
 use crate::{
     msg::{
-        ContractInfo, FilterTypes, HandleAnswer, HandleMsg, InactiveOffspringInfo, InitMsg,
-        OffspringContractInfo, OffspringInfo, QueryAnswer, QueryMsg, RegisterOffspringInfo,
+        ContractInfo, FilterTypes, HandleAnswer, HandleMsg, InitMsg,
+        OffspringContractInfo, QueryAnswer, QueryMsg, RegisterOffspringInfo,
         ResponseStatus::Success, StoreInactiveOffspringInfo, StoreOffspringInfo,
     },
     offspring_msg::OffspringInitMsg,
@@ -45,18 +43,15 @@ pub fn init<S: Storage, A: Api, Q: Querier>(
     msg: InitMsg,
 ) -> InitResult {
     let prng_seed: Vec<u8> = sha_256(base64::encode(msg.entropy).as_bytes()).to_vec();
-    let active: HashSet<u32> = HashSet::new();
 
     let config = Config {
         version: msg.offspring_contract,
-        index: 0,
         stopped: false,
         admin: deps.api.canonical_address(&env.message.sender)?,
     };
 
     save(&mut deps.storage, CONFIG_KEY, &config)?;
     save(&mut deps.storage, PRNG_SEED_KEY, &prng_seed)?;
-    save(&mut deps.storage, ACTIVE_KEY, &active)?;
 
     Ok(InitResponse::default())
 }
@@ -85,8 +80,8 @@ pub fn handle<S: Storage, A: Api, Q: Querier>(
         HandleMsg::RegisterOffspring { owner, offspring } => {
             try_register_offspring(deps, env, owner, &offspring)
         }
-        HandleMsg::DeactivateOffspring { index, owner } => {
-            try_deactivate_offspring(deps, env, index, &owner)
+        HandleMsg::DeactivateOffspring { owner } => {
+            try_deactivate_offspring(deps, env, &owner)
         }
         HandleMsg::CreateViewingKey { entropy } => try_create_key(deps, env, &entropy),
         HandleMsg::SetViewingKey { key, .. } => try_set_key(deps, env, &key),
@@ -143,7 +138,7 @@ fn try_create_offspring<S: Storage, A: Api, Q: Querier>(
     count: i32,
     description: Option<String>,
 ) -> HandleResult {
-    let mut config: Config = load(&deps.storage, CONFIG_KEY)?;
+    let config: Config = load(&deps.storage, CONFIG_KEY)?;
     if config.stopped {
         return Err(StdError::generic_err(
             "The factory has been stopped. No new offspring can be created",
@@ -166,16 +161,12 @@ fn try_create_offspring<S: Storage, A: Api, Q: Querier>(
 
     let initmsg = OffspringInitMsg {
         factory,
-        index: config.index,
         label: label.clone(),
         password: password.clone(),
         owner,
         count,
         description,
     };
-    // increment the index for the next offspring
-    config.index += 1;
-    save(&mut deps.storage, CONFIG_KEY, &config)?;
 
     let cosmosmsg = initmsg.to_cosmos_msg(
         label,
@@ -223,29 +214,17 @@ fn try_register_offspring<S: Storage, A: Api, Q: Querier>(
 
     // convert register offspring info to storage format
     let offspring_addr = deps.api.canonical_address(&env.message.sender)?;
-    let offspring = reg_offspring.to_store_offspring_info(offspring_addr);
+    let offspring = reg_offspring.to_store_offspring_info(env.message.sender.clone());
 
-    // save the offspring info keyed by its index
-    let mut info_store = PrefixedStorage::new(PREFIX_ACTIVE_INFO, &mut deps.storage);
-    save(
-        &mut info_store,
-        &reg_offspring.index.to_le_bytes(),
-        &offspring,
-    )?;
-
-    // add the offspring address to list of active offspring
-    let mut active: HashSet<u32> = load(&deps.storage, ACTIVE_KEY)?;
-    active.insert(reg_offspring.index);
-    save(&mut deps.storage, ACTIVE_KEY, &active)?;
+    // save the offspring info
+    let mut info_store = CashMap::init(ACTIVE_KEY, &mut deps.storage);
+    info_store.insert(offspring_addr.as_slice(), offspring.clone())?;
 
     // get list of owner's active offspring
-    let owner_raw = &deps.api.canonical_address(&owner)?;
-    let mut owner_store = PrefixedStorage::new(PREFIX_OWNERS_ACTIVE, &mut deps.storage);
-    let load_offsprings: Option<HashSet<u32>> = may_load(&owner_store, owner_raw.as_slice())?;
-    let mut my_active = load_offsprings.unwrap_or_default();
+    let mut owners_store = PrefixedStorage::new(PREFIX_OWNERS_ACTIVE, &mut deps.storage);
+    let mut my_active_store: CashMap<StoreOffspringInfo, _, _> = CashMap::init(owner.to_string().as_bytes(), &mut owners_store);
     // add this offspring to owner's list
-    my_active.insert(reg_offspring.index);
-    save(&mut owner_store, owner_raw.as_slice(), &my_active)?;
+    my_active_store.insert(offspring_addr.as_slice(), offspring)?;
 
     Ok(HandleResponse {
         messages: vec![],
@@ -263,48 +242,34 @@ fn try_register_offspring<S: Storage, A: Api, Q: Querier>(
 ///
 /// * `deps` - mutable reference to Extern containing all the contract's external dependencies
 /// * `env` - Env of contract's environment
-/// * `index` - offspring's index in factory
 /// * `owner` - offspring's owner
 fn try_deactivate_offspring<S: Storage, A: Api, Q: Querier>(
     deps: &mut Extern<S, A, Q>,
     env: Env,
-    index: u32,
     owner: &HumanAddr,
 ) -> HandleResult {
+
     let offspring_addr = &deps.api.canonical_address(&env.message.sender)?;
 
     // verify offspring is in active list, and not a spam attempt
-    let (may_active, may_info, may_error) =
-        authenticate_offspring(&deps.storage, offspring_addr, index)?;
-    if let Some(error) = may_error {
-        return error;
-    }
+    let may_info = authenticate_offspring(&deps.storage, offspring_addr)?;
     // delete the active offspring info
-    let mut info_store = PrefixedStorage::new(PREFIX_ACTIVE_INFO, &mut deps.storage);
-    info_store.remove(&index.to_le_bytes());
-    // remove the offspring from the active list
-    let mut active = may_active.unwrap();
-    active.remove(&index);
-    save(&mut deps.storage, ACTIVE_KEY, &active)?;
+    let mut info_store: CashMap<StoreOffspringInfo, _, _> = CashMap::init(ACTIVE_KEY, &mut deps.storage);
+    info_store.remove(offspring_addr.as_slice())?;
 
-    // set the inactive offspring info
-    let offspring_info = may_info.unwrap();
+    // save owner's inactive offspring info
+    let offspring_info = may_info;
     let inactive_info = offspring_info.to_store_inactive_offspring_info();
-    let mut inactive_info_store = PrefixedStorage::new(PREFIX_INACTIVE_INFO, &mut deps.storage);
-    let mut inactive_store = AppendStoreMut::attach_or_create(&mut inactive_info_store)?;
-    let inactive_index = inactive_store.len();
-    inactive_store.push(&inactive_info)?;
+    let mut owners_inactive_store = PrefixedStorage::new(PREFIX_OWNERS_INACTIVE, &mut deps.storage);
+    let mut inactive_store = CashMap::init(owner.to_string().as_bytes(), &mut owners_inactive_store);
+    inactive_store.insert(offspring_addr.as_slice(), inactive_info.clone())?;
+
+    // save inactive offspring info
+    let mut inactive_store = CashMap::init(INACTIVE_KEY, &mut deps.storage);
+    inactive_store.insert(offspring_addr.as_slice(), inactive_info)?;
 
     // remove offspring from owner's active list
-    let owner_raw = &deps.api.canonical_address(owner)?;
-    remove_from_persons_active(&mut deps.storage, PREFIX_OWNERS_ACTIVE, owner_raw, index)?;
-    // add to owner's inactive list
-    let mut owner_store = PrefixedStorage::multilevel(
-        &[PREFIX_OWNERS_INACTIVE, owner_raw.as_slice()],
-        &mut deps.storage,
-    );
-    let mut owner_inactive = AppendStoreMut::attach_or_create(&mut owner_store)?;
-    owner_inactive.push(&inactive_index)?;
+    remove_from_persons_active(&mut deps.storage, PREFIX_OWNERS_ACTIVE, owner, offspring_addr)?;
 
     Ok(HandleResponse {
         messages: vec![],
@@ -313,72 +278,29 @@ fn try_deactivate_offspring<S: Storage, A: Api, Q: Querier>(
     })
 }
 
-/// Returns StdResult<(Option<HashSet<u32>>, Option<StoreOffspringInfo>, Option<HandleResult>)>
+/// Returns StdResult<(StoreOffspringInfo)>
 ///
-/// verifies that the offspring is in the active list, and returns the active offspring
-/// list, the offspring information, or a possible error
+/// verifies that the offspring is in the active list, and returns the active offspring info
 ///
 /// # Arguments
 ///
 /// * `storage` - a reference to contract's storage
 /// * `offspring` - a reference to the offspring's address
-/// * `index` - index/key of the offspring
-#[allow(clippy::type_complexity)]
 fn authenticate_offspring<S: ReadonlyStorage>(
     storage: &S,
     offspring: &CanonicalAddr,
-    index: u32,
-) -> StdResult<(
-    Option<HashSet<u32>>,
-    Option<StoreOffspringInfo>,
-    Option<HandleResult>,
-)> {
-    let mut error: Option<HandleResult> = None;
-    let mut info: Option<StoreOffspringInfo> = None;
-    let active: Option<HashSet<u32>> = may_load(storage, ACTIVE_KEY)?;
-    if let Some(active_set) = active.as_ref() {
-        // get the offspring information
-        let info_store = ReadonlyPrefixedStorage::new(PREFIX_ACTIVE_INFO, storage);
-        info = may_load(&info_store, &index.to_le_bytes())?;
-        if let Some(offspring_info) = info.as_ref() {
-            if offspring_info.address != *offspring || !active_set.contains(&index) {
-                error = Some(Ok(HandleResponse {
-                    messages: vec![],
-                    log: vec![log(
-                        "Unauthorized",
-                        "You are not an active offspring this factory created",
-                    )],
-                    data: None,
-                }));
-            }
-        } else {
-            error = Some(Ok(HandleResponse {
-                messages: vec![],
-                log: vec![
-                    log(
-                        "Error",
-                        "Unable to register action with the factory contract",
-                    ),
-                    log("Reason", "Missing offspring information"),
-                ],
-                data: None,
-            }));
-        }
-    // if you can't load the active offspring list, it is an error but still let offspring process
+) -> StdResult<StoreOffspringInfo> {
+    let info_store: ReadOnlyCashMap<StoreOffspringInfo, _, _> = ReadOnlyCashMap::init(ACTIVE_KEY, storage);
+
+    let info = info_store.get(offspring.as_slice());
+
+    if let Some(offspring_info) = info {
+        Ok(offspring_info)
     } else {
-        error = Some(Ok(HandleResponse {
-            messages: vec![],
-            log: vec![
-                log(
-                    "Error",
-                    "Unable to register action with the factory contract",
-                ),
-                log("Reason", "Missing active offspring list"),
-            ],
-            data: None,
-        }));
+        return Err(StdError::generic_err(
+            "This is not an active offspring registered with factory.",
+        ));
     }
-    Ok((active, info, error))
 }
 
 /// Returns HandleResult
@@ -520,51 +442,17 @@ fn try_set_key<S: Storage, A: Api, Q: Querier>(
 /// * `storage` - mutable reference to contract's storage
 /// * `prefix` - prefix to storage of a person's active offspring list
 /// * `person` - a reference to the canonical address of the person the list belongs to
-/// * `index` - index of the offspring to remove
+/// * `offspring_addr` - a reference to the canonical address of the offspring to remove
 fn remove_from_persons_active<S: Storage>(
     storage: &mut S,
     prefix: &[u8],
-    person: &CanonicalAddr,
-    index: u32,
+    person: &HumanAddr,
+    offspring_addr: &CanonicalAddr,
 ) -> StdResult<()> {
     let mut store = PrefixedStorage::new(prefix, storage);
-    let load_active: Option<HashSet<u32>> = may_load(&store, person.as_slice())?;
-    if let Some(mut active) = load_active {
-        active.remove(&index);
-        save(&mut store, person.as_slice(), &active)?;
-    }
+    let mut load_active: CashMap<StoreOffspringInfo, _, _> = CashMap::init(person.to_string().as_bytes(), &mut store);
+    load_active.remove(offspring_addr.as_slice())?;
     Ok(())
-}
-
-/// Returns StdResult<(HashSet<u32>, bool)> which is the address' updated active list
-/// and a bool that is true if the list has been changed from what was in storage
-///
-/// remove any inactive offsprings from a list
-/// (useful for other lists that might be added on top of this template in the future)
-///
-/// # Arguments
-///
-/// * `storage` - a reference to active list storage subspace
-/// * `address` - a reference to the canonical address of the person the list belongs to
-/// * `active` - a mutable reference to the HashSet list of active offspring
-fn _filter_only_active<S: ReadonlyStorage>(
-    storage: &S,
-    address: &CanonicalAddr,
-    active: &mut HashSet<u32>,
-) -> StdResult<(HashSet<u32>, bool)> {
-    // get person's current list
-    let load_offsprings: Option<HashSet<u32>> = may_load(storage, address.as_slice())?;
-
-    // if there are active offspring in the list
-    if let Some(my_offspring) = load_offsprings {
-        let start_len = my_offspring.len();
-        // only keep the intersection of the person's list and the active offspring list
-        let my_active: HashSet<u32> = my_offspring.iter().filter_map(|v| active.take(v)).collect();
-        let updated = start_len != my_active.len();
-        return Ok((my_active, updated));
-        // if not just return an empty list
-    }
-    Ok((HashSet::new(), false))
 }
 
 /////////////////////////////////////// Query /////////////////////////////////////
@@ -580,11 +468,11 @@ pub fn query<S: Storage, A: Api, Q: Querier>(deps: &Extern<S, A, Q>, msg: QueryM
             address,
             viewing_key,
             filter,
-        } => try_list_my(deps, &address, viewing_key, filter),
-        QueryMsg::ListActiveOffspring {} => try_list_active(deps),
-        QueryMsg::ListInactiveOffspring { before, page_size } => {
-            try_list_inactive(deps, before, page_size)
-        }
+            start_page,
+            page_size,
+        } => try_list_my(deps, &address, viewing_key, filter, start_page, page_size),
+        QueryMsg::ListActiveOffspring { start_page, page_size } => try_list_active(deps, start_page, page_size),
+        QueryMsg::ListInactiveOffspring { start_page, page_size } => try_list_inactive(deps, start_page, page_size),
         QueryMsg::IsKeyValid {
             address,
             viewing_key,
@@ -616,9 +504,15 @@ fn try_validate_key<S: Storage, A: Api, Q: Querier>(
 /// # Arguments
 ///
 /// * `deps` - reference to Extern containing all the contract's external dependencies
-fn try_list_active<S: Storage, A: Api, Q: Querier>(deps: &Extern<S, A, Q>) -> QueryResult {
+/// * `start_page` - optional start page for the offsprings returned and listed
+/// * `page_size` - optional number of offspring to return in this page
+fn try_list_active<S: Storage, A: Api, Q: Querier>(
+    deps: &Extern<S, A, Q>,
+    start_page: Option<u32>,
+    page_size: Option<u32>,
+) -> QueryResult {
     to_binary(&QueryAnswer::ListActiveOffspring {
-        active: display_active_list(&deps.api, &deps.storage, None, ACTIVE_KEY)?,
+        active: display_active_list(&deps.storage, None, ACTIVE_KEY, start_page, page_size)?,
     })
 }
 
@@ -660,50 +554,56 @@ fn is_key_valid<S: ReadonlyStorage>(
 /// * `address` - a reference to the address whose offspring should be listed
 /// * `viewing_key` - String key used to authenticate the query
 /// * `filter` - optional choice of display filters
+/// * `start_page` - optional start page for the offsprings returned and listed
+/// * `page_size` - optional number of offspring to return in this page
 fn try_list_my<S: Storage, A: Api, Q: Querier>(
     deps: &Extern<S, A, Q>,
     address: &HumanAddr,
     viewing_key: String,
     filter: Option<FilterTypes>,
+    start_page: Option<u32>,
+    page_size: Option<u32>,
 ) -> QueryResult {
     let addr_raw = &deps.api.canonical_address(address)?;
     // if key matches
-    if is_key_valid(&deps.storage, addr_raw, viewing_key)? {
-        let mut active_list: Option<Vec<OffspringInfo>> = None;
-        let mut inactive_list: Option<Vec<InactiveOffspringInfo>> = None;
-        // if no filter default to ALL
-        let types = filter.unwrap_or(FilterTypes::All);
-
-        // list the active offspring
-        if types == FilterTypes::Active || types == FilterTypes::All {
-            active_list = display_active_list(
-                &deps.api,
-                &deps.storage,
-                Some(PREFIX_OWNERS_ACTIVE),
-                addr_raw.as_slice(),
-            )?;
-        }
-        // list the inactive offspring
-        if types == FilterTypes::Inactive || types == FilterTypes::All {
-            inactive_list = display_addr_inactive(
-                &deps.api,
-                &deps.storage,
-                PREFIX_OWNERS_INACTIVE,
-                addr_raw.as_slice(),
-            )?;
-        }
-
-        return to_binary(&QueryAnswer::ListMyOffspring {
-            active: active_list,
-            inactive: inactive_list,
+    if !is_key_valid(&deps.storage, addr_raw, viewing_key)? {
+        return to_binary(&QueryAnswer::ViewingKeyError {
+            error: "Wrong viewing key for this address or viewing key not set".to_string(),
         });
     }
-    to_binary(&QueryAnswer::ViewingKeyError {
-        error: "Wrong viewing key for this address or viewing key not set".to_string(),
-    })
+    let mut active_list: Option<Vec<StoreOffspringInfo>> = None;
+    let mut inactive_list: Option<Vec<StoreInactiveOffspringInfo>> = None;
+    // if no filter default to ALL
+    let types = filter.unwrap_or(FilterTypes::All);
+
+    // list the active offspring
+    if types == FilterTypes::Active || types == FilterTypes::All {
+        active_list = Some( display_active_list(
+            &deps.storage,
+            Some( PREFIX_OWNERS_ACTIVE ),
+            address.to_string().as_bytes(),
+            start_page,
+            page_size,
+        )?);
+    }
+    // list the inactive offspring
+    if types == FilterTypes::Inactive || types == FilterTypes::All {
+        inactive_list = Some( display_inactive_list(
+            &deps.storage,
+            Some( PREFIX_OWNERS_INACTIVE ),
+            address.to_string().as_bytes(),
+            start_page,
+            page_size,
+        )?);
+    }
+
+    return to_binary(&QueryAnswer::ListMyOffspring {
+        active: active_list,
+        inactive: inactive_list,
+    });
 }
 
-/// Returns StdResult<Option<Vec<OffspringInfo>>>
+/// Returns StdResult<Vec<StoreOffspringInfo>>
 ///
 /// provide the appropriate list of active offspring
 ///
@@ -712,91 +612,70 @@ fn try_list_my<S: Storage, A: Api, Q: Querier>(
 /// * `api` - reference to the Api used to convert canonical and human addresses
 /// * `storage` - a reference to the contract's storage
 /// * `prefix` - optional storage prefix to load from
-/// * `key` - storage key to read
-fn display_active_list<S: ReadonlyStorage, A: Api>(
-    api: &A,
+/// * `key` - storage key to read (user addr byte)
+/// * `start_page` - optional start page for the offsprings returned and listed
+/// * `page_size` - optional number of offspring to return in this page
+fn display_active_list<S: ReadonlyStorage>(
     storage: &S,
     prefix: Option<&[u8]>,
     key: &[u8],
-) -> StdResult<Option<Vec<OffspringInfo>>> {
-    let load_list: Option<HashSet<u32>> = if let Some(pref) = prefix {
-        // reading a person's list
-        let read = &ReadonlyPrefixedStorage::new(pref, storage);
-        // if reading a prefix list (owner's list in this template)
-        may_load(read, key)?
-    // read the factory's active list
-    } else {
-        may_load(storage, key)?
-    };
-    // turn list of active offspring to a vec of displayable offspring infos
-    let actives = match load_list {
-        Some(list) => {
-            let mut display_list = Vec::new();
-            let read_info = &ReadonlyPrefixedStorage::new(PREFIX_ACTIVE_INFO, storage);
-            for index in list.iter() {
-                // get this offspring's info
-                let load_info: Option<StoreOffspringInfo> =
-                    may_load(read_info, &index.to_le_bytes())?;
-                if let Some(info) = load_info {
-                    display_list.push(OffspringInfo {
-                        address: api.human_address(&info.address)?,
-                        label: info.label.clone(),
-                    });
-                }
-            }
-            display_list
+    start_page: Option<u32>,
+    page_size: Option<u32>,
+) -> StdResult<Vec<StoreOffspringInfo>> {
+    let page_number = start_page.unwrap_or(0);
+    let size = page_size.unwrap_or(DEFAULT_PAGE_SIZE);
+    let list: Vec<StoreOffspringInfo>;
+    match prefix {
+        Some(pref) => {
+            // get owner's active list
+            let read = &ReadonlyPrefixedStorage::new(pref, storage);
+            let user_store: ReadOnlyCashMap<StoreOffspringInfo, _> = ReadOnlyCashMap::init(key, read);
+            list = user_store.paging(page_number, size)?;
+        },
+        None => {
+            // get factory's active list
+            let active_store: ReadOnlyCashMap<StoreOffspringInfo, _> = ReadOnlyCashMap::init(key, storage);
+            list = active_store.paging(page_number, size)?;
         }
-        None => Vec::new(),
-    };
-    if actives.is_empty() {
-        return Ok(None);
     }
-    Ok(Some(actives))
+    Ok(list)
 }
 
-/// Returns StdResult<Option<Vec<InactiveOffspringInfo>>>
+/// Returns StdResult<Vec<InactiveOffspringInfo>>
 ///
 /// provide the appropriate list of inactive offspring
 ///
 /// # Arguments
 ///
-/// * `api` - reference to the Api used to convert canonical and human addresses
 /// * `storage` - a reference to the contract's storage
-/// * `prefix` - storage prefix to load from
+/// * `prefix` - optional storage prefix to load from
 /// * `key` - storage key to read
-fn display_addr_inactive<S: ReadonlyStorage, A: Api>(
-    api: &A,
+/// * `start_page` - optional start page for the offsprings returned and listed
+/// * `page_size` - optional number of offspring to return in this page
+fn display_inactive_list<S: ReadonlyStorage>(
     storage: &S,
-    prefix: &[u8],
+    prefix: Option<&[u8]>,
     key: &[u8],
-) -> StdResult<Option<Vec<InactiveOffspringInfo>>> {
-    let list_store = ReadonlyPrefixedStorage::multilevel(&[prefix, key], storage);
-    let may_read_list = AppendStore::<u32, _>::attach(&list_store);
-    let mut inactive_vec = Vec::new();
-    if let Some(inactive_list) = may_read_list.and_then(|r| r.ok()) {
-        let info_store = ReadonlyPrefixedStorage::new(PREFIX_INACTIVE_INFO, storage);
-        let may_read_info = AppendStore::<StoreInactiveOffspringInfo, _>::attach(&info_store);
-        if let Some(closed_info) = may_read_info.and_then(|r| r.ok()) {
-            // grab backwards from the starting point
-            for index_res in inactive_list.iter().rev() {
-                if let Ok(index) = index_res {
-                    // get this offspring's info
-                    let load_info = closed_info.get_at(index);
-                    if let Ok(info) = load_info {
-                        inactive_vec.push(InactiveOffspringInfo {
-                            index: None,
-                            label: info.label.clone(),
-                            address: api.human_address(&info.address)?,
-                        });
-                    }
-                }
-            }
+    start_page: Option<u32>,
+    page_size: Option<u32>,
+) -> StdResult<Vec<StoreInactiveOffspringInfo>> {
+    let page_number = start_page.unwrap_or(0);
+    let size = page_size.unwrap_or(DEFAULT_PAGE_SIZE);
+    let list: Vec<StoreInactiveOffspringInfo>;
+    match prefix {
+        Some(pref) => {
+            // get owner's inactive list
+            let read = &ReadonlyPrefixedStorage::new(pref, storage);
+            let user_store: ReadOnlyCashMap<StoreInactiveOffspringInfo, _> = ReadOnlyCashMap::init(key, read);
+            list = user_store.paging(page_number, size)?;
+        },
+        None => {
+            // get factory's inactive list
+            let active_store: ReadOnlyCashMap<StoreInactiveOffspringInfo, _> = ReadOnlyCashMap::init(key, storage);
+            list = active_store.paging(page_number, size)?;
         }
     }
-    if inactive_vec.is_empty() {
-        return Ok(None);
-    }
-    Ok(Some(inactive_vec))
+    Ok(list)
 }
 
 /// Returns QueryResult listing the inactive offspring
@@ -804,46 +683,14 @@ fn display_addr_inactive<S: ReadonlyStorage, A: Api>(
 /// # Arguments
 ///
 /// * `deps` - reference to Extern containing all the contract's external dependencies
-/// * `before` - optional u32 index of the earliest offspring you do not want to display
+/// * `start_page` - optional start page for the offsprings returned and listed
 /// * `page_size` - optional number of offspring to display
 fn try_list_inactive<S: Storage, A: Api, Q: Querier>(
     deps: &Extern<S, A, Q>,
-    before: Option<u32>,
+    start_page: Option<u32>,
     page_size: Option<u32>,
 ) -> QueryResult {
-    let read_store = ReadonlyPrefixedStorage::new(PREFIX_INACTIVE_INFO, &deps.storage);
-    let may_read_store = AppendStore::<StoreInactiveOffspringInfo, _>::attach(&read_store);
-    let mut inactive_vec = Vec::new();
-    if let Some(inactive_store) = may_read_store.and_then(|r| r.ok()) {
-        // start iterating from the last close or before given index
-        let len = inactive_store.len();
-        let mut pos = before.unwrap_or(len);
-        if pos > len {
-            pos = len;
-        }
-        let skip = (len - pos) as usize;
-        let quant = page_size.unwrap_or(200) as usize;
-        // grab backwards from the starting point
-        for (i, res) in inactive_store
-            .iter()
-            .enumerate()
-            .rev()
-            .skip(skip)
-            .take(quant)
-        {
-            if let Ok(info) = res {
-                inactive_vec.push(InactiveOffspringInfo {
-                    index: Some(i as u32),
-                    label: info.label.clone(),
-                    address: deps.api.human_address(&info.address)?,
-                });
-            }
-        }
-    }
-    let inactive = if inactive_vec.is_empty() {
-        None
-    } else {
-        Some(inactive_vec)
-    };
-    to_binary(&QueryAnswer::ListInactiveOffspring { inactive })
+    to_binary(&QueryAnswer::ListInactiveOffspring {
+        inactive: display_inactive_list(&deps.storage, None, INACTIVE_KEY, start_page, page_size)?,
+    })
 }

@@ -20,7 +20,7 @@
                 "null"
               ],
               "items": {
-                "$ref": "#/definitions/OffspringInfo"
+                "$ref": "#/definitions/StoreOffspringInfo"
               }
             },
             "inactive": {
@@ -30,7 +30,7 @@
                 "null"
               ],
               "items": {
-                "$ref": "#/definitions/InactiveOffspringInfo"
+                "$ref": "#/definitions/StoreInactiveOffspringInfo"
               }
             }
           }
@@ -46,15 +46,15 @@
       "properties": {
         "list_active_offspring": {
           "type": "object",
+          "required": [
+            "active"
+          ],
           "properties": {
             "active": {
               "description": "active offspring sorted by pair",
-              "type": [
-                "array",
-                "null"
-              ],
+              "type": "array",
               "items": {
-                "$ref": "#/definitions/OffspringInfo"
+                "$ref": "#/definitions/StoreOffspringInfo"
               }
             }
           }
@@ -70,15 +70,15 @@
       "properties": {
         "list_inactive_offspring": {
           "type": "object",
+          "required": [
+            "inactive"
+          ],
           "properties": {
             "inactive": {
               "description": "inactive offspring in reverse chronological order",
-              "type": [
-                "array",
-                "null"
-              ],
+              "type": "array",
               "items": {
-                "$ref": "#/definitions/InactiveOffspringInfo"
+                "$ref": "#/definitions/StoreInactiveOffspringInfo"
               }
             }
           }
@@ -127,11 +127,15 @@
     }
   ],
   "definitions": {
-    "HumanAddr": {
+    "Binary": {
+      "description": "Binary is a wrapper around Vec<u8> to add base64 de/serialization with serde. It also adds some helper methods to help encode inline.\n\nThis is only needed as serde-json-{core,wasm} has a horrible encoding for Vec<u8>",
       "type": "string"
     },
-    "InactiveOffspringInfo": {
-      "description": "inactive offspring display info",
+    "CanonicalAddr": {
+      "$ref": "#/definitions/Binary"
+    },
+    "StoreInactiveOffspringInfo": {
+      "description": "inactive offspring storage/display format",
       "type": "object",
       "required": [
         "address",
@@ -142,18 +146,9 @@
           "description": "offspring address",
           "allOf": [
             {
-              "$ref": "#/definitions/HumanAddr"
+              "$ref": "#/definitions/CanonicalAddr"
             }
           ]
-        },
-        "index": {
-          "description": "index in inactive offspring list",
-          "type": [
-            "integer",
-            "null"
-          ],
-          "format": "uint32",
-          "minimum": 0.0
         },
         "label": {
           "description": "label used when initializing offspring",
@@ -161,8 +156,8 @@
         }
       }
     },
-    "OffspringInfo": {
-      "description": "active offspring display info",
+    "StoreOffspringInfo": {
+      "description": "active offspring info for storage/display",
       "type": "object",
       "required": [
         "address",
@@ -173,7 +168,7 @@
           "description": "offspring address",
           "allOf": [
             {
-              "$ref": "#/definitions/HumanAddr"
+              "$ref": "#/definitions/CanonicalAddr"
             }
           ]
         },
