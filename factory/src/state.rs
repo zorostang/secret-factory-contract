@@ -16,8 +16,6 @@ pub const PREFIX_OWNERS_ACTIVE: &[u8] = b"ownersactive";
 pub const PREFIX_ACTIVE_INFO: &[u8] = b"activeinfo";
 /// prefix for storage of a inactive offspring info
 pub const INACTIVE_KEY: &[u8] = b"inactiveinfo";
-/// prefix for viewing keys
-pub const PREFIX_VIEW_KEY: &[u8] = b"viewingkey";
 /// storage key for prng seed
 pub const PRNG_SEED_KEY: &[u8] = b"prngseed";
 /// storage key for the factory config

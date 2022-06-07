@@ -7,16 +7,19 @@ use cosmwasm_storage::{PrefixedStorage, ReadonlyPrefixedStorage};
 
 use secret_toolkit::{
     utils::{pad_handle_result, pad_query_result, InitCallback},
+    
 };
+
+use secret_toolkit_viewing_key::{ViewingKey, ViewingKeyStore};
 
 use secret_toolkit_incubator::{CashMap, ReadOnlyCashMap};
 
 use crate::{rand::sha_256, state::DEFAULT_PAGE_SIZE};
 use crate::state::{
     load, may_load, remove, save, Config, ACTIVE_KEY, BLOCK_SIZE, CONFIG_KEY, PENDING_KEY, INACTIVE_KEY, PREFIX_OWNERS_ACTIVE, PREFIX_OWNERS_INACTIVE,
-    PREFIX_VIEW_KEY, PRNG_SEED_KEY,
+    PRNG_SEED_KEY,
 };
-use crate::viewing_key::{ViewingKey, VIEWING_KEY_SIZE};
+
 use crate::{
     msg::{
         ContractInfo, FilterTypes, HandleAnswer, HandleMsg, InitMsg,
@@ -83,7 +86,7 @@ pub fn handle<S: Storage, A: Api, Q: Querier>(
         HandleMsg::DeactivateOffspring { owner } => {
             try_deactivate_offspring(deps, env, &owner)
         }
-        HandleMsg::CreateViewingKey { entropy } => try_create_key(deps, env, &entropy),
+        HandleMsg::CreateViewingKey { entropy } => try_create_key(deps, env, entropy),
         HandleMsg::SetViewingKey { key, .. } => try_set_key(deps, env, &key),
         HandleMsg::NewOffspringContract { offspring_contract } => {
             try_new_contract(deps, env, offspring_contract)
@@ -381,18 +384,13 @@ fn try_set_status<S: Storage, A: Api, Q: Querier>(
 ///
 /// * `deps` - mutable reference to Extern containing all the contract's external dependencies
 /// * `env` - Env of contract's environment
-/// * `entropy` - string slice to be used as an entropy source for randomization
+/// * `entropy` - string to be used as an entropy source for randomization
 fn try_create_key<S: Storage, A: Api, Q: Querier>(
     deps: &mut Extern<S, A, Q>,
     env: Env,
-    entropy: &str,
+    entropy: String,
 ) -> HandleResult {
-    // create and store the key
-    let prng_seed: Vec<u8> = load(&deps.storage, PRNG_SEED_KEY)?;
-    let key = ViewingKey::new(&env, &prng_seed, entropy.as_ref());
-    let message_sender = &deps.api.canonical_address(&env.message.sender)?;
-    let mut key_store = PrefixedStorage::new(PREFIX_VIEW_KEY, &mut deps.storage);
-    save(&mut key_store, message_sender.as_slice(), &key.to_hashed())?;
+    let key = ViewingKey::create(&mut deps.storage, &env, &env.message.sender, entropy.as_bytes());
 
     Ok(HandleResponse {
         messages: vec![],
@@ -417,11 +415,7 @@ fn try_set_key<S: Storage, A: Api, Q: Querier>(
     env: Env,
     key: &str,
 ) -> HandleResult {
-    // store the viewing key
-    let vk = ViewingKey(key.to_string());
-    let message_sender = &deps.api.canonical_address(&env.message.sender)?;
-    let mut key_store = PrefixedStorage::new(PREFIX_VIEW_KEY, &mut deps.storage);
-    save(&mut key_store, message_sender.as_slice(), &vk.to_hashed())?;
+    ViewingKey::set(&mut deps.storage, &env.message.sender, key);
 
     Ok(HandleResponse {
         messages: vec![],
@@ -493,9 +487,8 @@ fn try_validate_key<S: Storage, A: Api, Q: Querier>(
     address: &HumanAddr,
     viewing_key: String,
 ) -> QueryResult {
-    let addr_raw = &deps.api.canonical_address(address)?;
     to_binary(&QueryAnswer::IsKeyValid {
-        is_valid: is_key_valid(&deps.storage, addr_raw, viewing_key)?,
+        is_valid: is_key_valid(&deps.storage, address, viewing_key),
     })
 }
 
@@ -516,7 +509,7 @@ fn try_list_active<S: Storage, A: Api, Q: Querier>(
     })
 }
 
-/// Returns StdResult<bool> result of validating an address' viewing key
+/// Returns bool result of validating an address' viewing key
 ///
 /// # Arguments
 ///
@@ -525,25 +518,10 @@ fn try_list_active<S: Storage, A: Api, Q: Querier>(
 /// * `viewing_key` - String key used for authentication
 fn is_key_valid<S: ReadonlyStorage>(
     storage: &S,
-    address: &CanonicalAddr,
+    address: &HumanAddr,
     viewing_key: String,
-) -> StdResult<bool> {
-    // load the address' key
-    let read_key = ReadonlyPrefixedStorage::new(PREFIX_VIEW_KEY, storage);
-    let load_key: Option<[u8; VIEWING_KEY_SIZE]> = may_load(&read_key, address.as_slice())?;
-    let input_key = ViewingKey(viewing_key);
-    // if a key was set
-    if let Some(expected_key) = load_key {
-        // and it matches
-        if input_key.check_viewing_key(&expected_key) {
-            return Ok(true);
-        }
-    } else {
-        // Checking the key will take significant time. We don't want to exit immediately if it isn't set
-        // in a way which will allow to time the command and determine if a viewing key doesn't exist
-        input_key.check_viewing_key(&[0u8; VIEWING_KEY_SIZE]);
-    }
-    Ok(false)
+) -> bool {
+    return ViewingKey::check(storage, address, &viewing_key).is_ok();
 }
 
 /// Returns QueryResult listing the offspring with the address as its owner
@@ -564,9 +542,8 @@ fn try_list_my<S: Storage, A: Api, Q: Querier>(
     start_page: Option<u32>,
     page_size: Option<u32>,
 ) -> QueryResult {
-    let addr_raw = &deps.api.canonical_address(address)?;
     // if key matches
-    if !is_key_valid(&deps.storage, addr_raw, viewing_key)? {
+    if !is_key_valid(&deps.storage, address, viewing_key) {
         return to_binary(&QueryAnswer::ViewingKeyError {
             error: "Wrong viewing key for this address or viewing key not set".to_string(),
         });

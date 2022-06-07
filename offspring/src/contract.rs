@@ -1,5 +1,5 @@
 use cosmwasm_std::{
-    debug_print, to_binary, Api, Env, Extern, HandleResponse, HandleResult, HumanAddr,
+    to_binary, Api, Env, Extern, HandleResponse, HandleResult, HumanAddr,
     InitResponse, InitResult, Querier, QueryResult, StdError, StdResult, Storage,
 };
 use secret_toolkit::utils::{HandleCallback, Query};
@@ -10,7 +10,7 @@ use crate::factory_msg::{
 use crate::msg::{
     HandleMsg, InitMsg, QueryAnswer, QueryMsg,
 };
-use crate::state::{config, config_read, State};
+use crate::state::{State, save, CONFIG_KEY, load};
 
 ////////////////////////////////////// Init ///////////////////////////////////////
 /// Returns InitResult
@@ -38,7 +38,7 @@ pub fn init<S: Storage, A: Api, Q: Querier>(
         owner: msg.owner.clone(),
     };
 
-    config(&mut deps.storage).save(&state)?;
+    save(&mut deps.storage, CONFIG_KEY, &state)?;
 
     // perform register callback to factory
     let offspring = FactoryOffspringInfo {
@@ -90,16 +90,14 @@ pub fn try_deactivate<S: Storage, A: Api, Q: Querier>(
     deps: &mut Extern<S, A, Q>,
     env: Env,
 ) -> HandleResult {
-    let mut config = config(&mut deps.storage);
-    let state = &config.load()?;
-    config.update(|mut state| {
-        enforce_active(&state)?;
-        if env.message.sender != state.owner {
-            return Err(StdError::Unauthorized { backtrace: None });
-        }
-        state.active = false;
-        Ok(state)
-    })?;
+    let mut state: State = load(&mut deps.storage, CONFIG_KEY)?;
+    enforce_active(&state)?;
+    if env.message.sender != state.owner {
+        return Err(StdError::Unauthorized { backtrace: None });
+    }
+    state.active = false;
+    save(&mut deps.storage, CONFIG_KEY, &state)?;
+
     // let factory know
     let deactivate_msg = FactoryHandleMsg::DeactivateOffspring {
         owner: state.owner.clone(),
@@ -121,15 +119,11 @@ pub fn try_deactivate<S: Storage, A: Api, Q: Querier>(
 ///
 /// * `deps` - mutable reference to Extern containing all the contract's external dependencies
 pub fn try_increment<S: Storage, A: Api, Q: Querier>(deps: &mut Extern<S, A, Q>) -> HandleResult {
-    let mut config = config(&mut deps.storage);
-    let state = &config.load()?;
-    enforce_active(state)?;
-    config.update(|mut state| {
-        state.count += 1;
-        debug_print!("count = {}", state.count);
-        Ok(state)
-    })?;
-    debug_print("count incremented successfully");
+    let mut state: State = load(&mut deps.storage, CONFIG_KEY)?;
+    enforce_active(&state)?;
+    state.count += 1;
+    save(&mut deps.storage, CONFIG_KEY, &state)?;
+
     Ok(HandleResponse::default())
 }
 
@@ -147,15 +141,14 @@ pub fn try_reset<S: Storage, A: Api, Q: Querier>(
     env: Env,
     count: i32,
 ) -> HandleResult {
-    config(&mut deps.storage).update(|mut state| {
-        enforce_active(&state)?;
-        if env.message.sender != state.owner {
-            return Err(StdError::Unauthorized { backtrace: None });
-        }
-        state.count = count;
-        Ok(state)
-    })?;
-    debug_print("count reset successfully");
+    let mut state: State = load(&mut deps.storage, CONFIG_KEY)?;
+    enforce_active(&state)?;
+    if env.message.sender != state.owner {
+        return Err(StdError::Unauthorized { backtrace: None });
+    }
+    state.count = count;
+    save(&mut deps.storage, CONFIG_KEY, &state)?;
+
     Ok(HandleResponse::default())
 }
 
@@ -187,7 +180,7 @@ fn query_count<S: Storage, A: Api, Q: Querier>(
     address: &HumanAddr,
     viewing_key: String,
 ) -> StdResult<QueryAnswer> {
-    let state = config_read(&deps.storage).load()?;
+    let state: State = load(&deps.storage, CONFIG_KEY)?;
     if state.owner == *address {
         enforce_valid_viewing_key(deps, &state, address, viewing_key)?;
         return Ok(QueryAnswer::CountResponse { count: state.count });
