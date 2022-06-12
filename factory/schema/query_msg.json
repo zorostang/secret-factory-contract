@@ -61,7 +61,7 @@
       }
     },
     {
-      "description": "lists all active offspring",
+      "description": "lists all active offspring in reverse chronological order",
       "type": "object",
       "required": [
         "list_active_offspring"

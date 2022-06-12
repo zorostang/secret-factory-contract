@@ -38,7 +38,7 @@
       }
     },
     {
-      "description": "List active offspring sorted by pair",
+      "description": "List active offspring",
       "type": "object",
       "required": [
         "list_active_offspring"
@@ -51,7 +51,7 @@
           ],
           "properties": {
             "active": {
-              "description": "active offspring sorted by pair",
+              "description": "active offspring",
               "type": "array",
               "items": {
                 "$ref": "#/definitions/StoreOffspringInfo"
@@ -62,7 +62,7 @@
       }
     },
     {
-      "description": "List inactive offspring in reverse chronological order",
+      "description": "List inactive offspring in no particular order",
       "type": "object",
       "required": [
         "list_inactive_offspring"
@@ -75,7 +75,7 @@
           ],
           "properties": {
             "inactive": {
-              "description": "inactive offspring in reverse chronological order",
+              "description": "inactive offspring in no particular order",
               "type": "array",
               "items": {
                 "$ref": "#/definitions/StoreInactiveOffspringInfo"

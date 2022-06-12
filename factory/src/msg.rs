@@ -136,14 +136,14 @@ pub enum QueryAnswer {
         #[serde(skip_serializing_if = "Option::is_none")]
         inactive: Option<Vec<StoreInactiveOffspringInfo>>,
     },
-    /// List active offspring sorted by pair
+    /// List active offspring
     ListActiveOffspring {
-        /// active offspring sorted by pair
+        /// active offspring
         active: Vec<StoreOffspringInfo>,
     },
-    /// List inactive offspring in reverse chronological order
+    /// List inactive offspring in no particular order
     ListInactiveOffspring {
-        /// inactive offspring in reverse chronological order
+        /// inactive offspring in no particular order
         inactive: Vec<StoreInactiveOffspringInfo>,
     },
     /// Viewing Key Error

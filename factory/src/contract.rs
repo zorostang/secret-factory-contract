@@ -220,7 +220,7 @@ fn try_register_offspring<S: Storage, A: Api, Q: Querier>(
     let offspring = reg_offspring.to_store_offspring_info(env.message.sender.clone());
 
     // save the offspring info
-    let mut info_store = CashMap::init(ACTIVE_KEY, &mut deps.storage);
+    let mut info_store: CashMap<StoreOffspringInfo, _> = CashMap::init(ACTIVE_KEY, &mut deps.storage);
     info_store.insert(offspring_addr.as_slice(), offspring.clone())?;
 
     // get list of owner's active offspring
