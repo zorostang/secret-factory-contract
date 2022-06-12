@@ -4,7 +4,7 @@ Factory contracts are useful for scaling your web3 app when you need to create n
 
 This repo contains two template contracts. The factory contract template is responsible for creating offspring contracts, storing them, and listing them in queries. The factory contract also stores the viewing key of the users so that a user does not need to create multiple viewing keys for each individual offspring they interract with.
 
-This template makes no reference to auction specific features, and is meant to be customized for a specific use case.
+This contract makes use of the incubator feature Cashmaps for listing and paging mechanics in factory queries.
 
 ## **About the Contracts** ##
 
@@ -13,6 +13,8 @@ The offspring contract is based on the [simple counter template](https://github.
 The factory registers the offsprings it creates. In order for an offspring to be initialized and registered in the factory, the factory is the one that must be initializing the offspring contract. The registration of the offspring contract is done by a post init callback which carries with it a password to ensure that offspring contracts not initialized by the factory cannot be registered.
 
 The state of the offspring contract has a boolean variable called `active` which is initialized as true. I believe many implementations of the factory model will implement some sense of deactivation/finalization of the offspring contract, such as a finalized auction. That's why offspring are split into two groups in the factory, that is `active` and `inactive`.
+
+Another important feature these contracts implement is that user viewing keys are only stored in factory. So whenever the offspring contract needs to verify that a viewing key is valid, it will query the factory contract (this has no extra gas cost.)
 
 ## **Instantiating the Factory Contract** ##
 
