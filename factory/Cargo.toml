@@ -41,9 +41,9 @@ serde = { version = "1.0.103", default-features = false, features = ["derive"] }
 # serde-json-wasm = "0.4.1"
 snafu = { version = "0.6.3" }
 secret-toolkit = { version = "0.3", default-features = false, features = ["storage", "serialization", "utils", "incubator"] }
-secret-toolkit-incubator = { git = "https://github.com/srdtrk/secret-toolkit", default-features = false, features = ["cashmap"] }
+secret-toolkit-incubator = { version = "0.3.1", default-features = false, features = ["cashmap"] }
 secret-toolkit-viewing-key = { version = "0.3" }
-# secret-toolkit-serialization = {git = "https://github.com/srdtrk/secret-toolkit"} 
+# secret-toolkit-serialization = { version = "0.3" } 
 subtle = { version = "2.2.3", default-features = false }
 rand_chacha = { version = "0.2.2", default-features = false }
 rand_core = { version =  "0.5.1", default-features = false }

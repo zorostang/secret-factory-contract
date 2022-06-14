@@ -128,7 +128,7 @@ dependencies = [
  "secret-cosmwasm-std",
  "secret-cosmwasm-storage",
  "secret-toolkit",
- "secret-toolkit-incubator 0.3.0 (git+https://github.com/srdtrk/secret-toolkit)",
+ "secret-toolkit-incubator",
  "secret-toolkit-viewing-key",
  "serde",
  "sha2",
@@ -290,8 +290,8 @@ version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9a117a6fadadd1d2692df73f19fc3319ec4db59c76f364ce1e1a0f3bd0bbead8"
 dependencies = [
- "secret-toolkit-incubator 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "secret-toolkit-serialization 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "secret-toolkit-incubator",
+ "secret-toolkit-serialization",
  "secret-toolkit-storage",
  "secret-toolkit-utils",
 ]
@@ -310,20 +310,14 @@ dependencies = [
 
 [[package]]
 name = "secret-toolkit-incubator"
-version = "0.3.0"
+version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5fe6518ad42503c73fff77477712edbfa5394281fb972b0b89f3fe7a7b43cd19"
-
-[[package]]
-name = "secret-toolkit-incubator"
-version = "0.3.0"
-source = "git+https://github.com/srdtrk/secret-toolkit#a7b43e329537a525f6d3a557dd9a258cc28a5a58"
+checksum = "371d61683921b104c3dc06489e9302832ebc99820bd344696dc272a5c8b8208d"
 dependencies = [
  "secret-cosmwasm-std",
  "secret-cosmwasm-storage",
- "secret-toolkit-serialization 0.3.0 (git+https://github.com/srdtrk/secret-toolkit)",
+ "secret-toolkit-serialization",
  "serde",
- "siphasher",
 ]
 
 [[package]]
@@ -339,17 +333,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "secret-toolkit-serialization"
-version = "0.3.0"
-source = "git+https://github.com/srdtrk/secret-toolkit#a7b43e329537a525f6d3a557dd9a258cc28a5a58"
-dependencies = [
- "bincode2",
- "schemars",
- "secret-cosmwasm-std",
- "serde",
-]
-
-[[package]]
 name = "secret-toolkit-storage"
 version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -357,7 +340,7 @@ checksum = "fb688dc8c8b882bcca2176005e5c3344ba0229f7b200c12d06202163b0e13773"
 dependencies = [
  "secret-cosmwasm-std",
  "secret-cosmwasm-storage",
- "secret-toolkit-serialization 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "secret-toolkit-serialization",
  "serde",
 ]
 
@@ -452,12 +435,6 @@ dependencies = [
  "digest",
  "opaque-debug",
 ]
-
-[[package]]
-name = "siphasher"
-version = "0.3.10"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7bd3e3206899af3f8b12af284fafc038cc1dc2b41d1b89dd17297221c5d225de"
 
 [[package]]
 name = "snafu"
