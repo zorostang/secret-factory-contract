@@ -95,16 +95,9 @@
         "deactivate_offspring": {
           "type": "object",
           "required": [
-            "index",
             "owner"
           ],
           "properties": {
-            "index": {
-              "description": "offspring index",
-              "type": "integer",
-              "format": "uint32",
-              "minimum": 0.0
-            },
             "owner": {
               "description": "offspring's owner",
               "allOf": [
@@ -229,20 +222,13 @@
       }
     },
     "RegisterOffspringInfo": {
-      "description": "active offspring info for storage",
+      "description": "active offspring info for storage/display",
       "type": "object",
       "required": [
-        "index",
         "label",
         "password"
       ],
       "properties": {
-        "index": {
-          "description": "index with the factory",
-          "type": "integer",
-          "format": "uint32",
-          "minimum": 0.0
-        },
         "label": {
           "description": "label used when initializing offspring",
           "type": "string"

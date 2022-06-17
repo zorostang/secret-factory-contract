@@ -32,6 +32,26 @@
                 }
               ]
             },
+            "page_size": {
+              "description": "optional number of offspring to return in this page (applies to both active and inactive). Default: DEFAULT_PAGE_SIZE",
+              "default": null,
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "uint32",
+              "minimum": 0.0
+            },
+            "start_page": {
+              "description": "start page for the offsprings returned and listed (applies to both active and inactive). Default: 0",
+              "default": null,
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "uint32",
+              "minimum": 0.0
+            },
             "viewing_key": {
               "description": "viewing key",
               "type": "string"
@@ -41,29 +61,17 @@
       }
     },
     {
-      "description": "lists all active offspring",
+      "description": "lists all active offspring in reverse chronological order",
       "type": "object",
       "required": [
         "list_active_offspring"
       ],
       "properties": {
         "list_active_offspring": {
-          "type": "object"
-        }
-      }
-    },
-    {
-      "description": "lists inactive offspring in reverse chronological order.  If you specify page size, it returns only that number of offspring (default is 200). If you specify the before parameter, it will start listing from the first offspring whose index is less than \"before\".  If you are paginating, you would take the index of the last offspring you receive, and specify that as the before parameter on your next query so it will continue where it left off",
-      "type": "object",
-      "required": [
-        "list_inactive_offspring"
-      ],
-      "properties": {
-        "list_inactive_offspring": {
           "type": "object",
           "properties": {
-            "before": {
-              "description": "optionally only show offspring with index less than specified value",
+            "page_size": {
+              "description": "optional number of offspring to return in this page. Default: DEFAULT_PAGE_SIZE",
               "default": null,
               "type": [
                 "integer",
@@ -72,8 +80,42 @@
               "format": "uint32",
               "minimum": 0.0
             },
+            "start_page": {
+              "description": "start page for the offsprings returned and listed. Default: 0",
+              "default": null,
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "uint32",
+              "minimum": 0.0
+            }
+          }
+        }
+      }
+    },
+    {
+      "description": "lists inactive offspring in reverse chronological order.",
+      "type": "object",
+      "required": [
+        "list_inactive_offspring"
+      ],
+      "properties": {
+        "list_inactive_offspring": {
+          "type": "object",
+          "properties": {
             "page_size": {
-              "description": "optional number of offspring to return",
+              "description": "optional number of offspring to return in this page. Default: DEFAULT_PAGE_SIZE",
+              "default": null,
+              "type": [
+                "integer",
+                "null"
+              ],
+              "format": "uint32",
+              "minimum": 0.0
+            },
+            "start_page": {
+              "description": "start page for the offsprings returned and listed. Default: 0",
               "default": null,
               "type": [
                 "integer",

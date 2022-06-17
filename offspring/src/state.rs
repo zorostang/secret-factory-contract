@@ -5,11 +5,10 @@ use secret_toolkit::serialization::{Bincode2, Serde};
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
 
 use cosmwasm_std::{Storage, HumanAddr, ReadonlyStorage, StdResult, StdError};
-use cosmwasm_storage::{singleton, singleton_read, ReadonlySingleton, Singleton};
 
 use crate::msg::ContractInfo;
 
-pub static CONFIG_KEY: &[u8] = b"config";
+pub const CONFIG_KEY: &[u8] = b"config";
 
 /// pad handle responses and log attributes to blocks of 256 bytes to prevent leaking info based on
 /// response size
@@ -20,8 +19,6 @@ pub const BLOCK_SIZE: usize = 256;
 pub struct State {
     /// factory code hash and address
     pub factory: ContractInfo,
-    /// index within the factory
-    pub index: u32,
     /// label used when initializing offspring
     pub label: String,
     /// this is relevant if the factory is listing offsprings by activity status.
@@ -38,14 +35,6 @@ pub struct State {
     pub count: i32,
     /// address of the owner associated to this offspring contract
     pub owner: HumanAddr,
-}
-
-pub fn config<S: Storage>(storage: &mut S) -> Singleton<S, State> {
-    singleton(storage, CONFIG_KEY)
-}
-
-pub fn config_read<S: Storage>(storage: &S) -> ReadonlySingleton<S, State> {
-    singleton_read(storage, CONFIG_KEY)
 }
 
 /// Returns StdResult<()> resulting from saving an item to storage

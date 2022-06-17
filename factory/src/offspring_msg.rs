@@ -10,8 +10,6 @@ use crate::{msg::ContractInfo, state::BLOCK_SIZE};
 pub struct OffspringInitMsg {
     /// factory contract code hash and address
     pub factory: ContractInfo,
-    /// offspring's index within the factory
-    pub index: u32,
     /// label used when initializing offspring
     pub label: String,
     /// String password for the offspring

@@ -20,7 +20,7 @@
                 "null"
               ],
               "items": {
-                "$ref": "#/definitions/OffspringInfo"
+                "$ref": "#/definitions/StoreOffspringInfo"
               }
             },
             "inactive": {
@@ -30,7 +30,7 @@
                 "null"
               ],
               "items": {
-                "$ref": "#/definitions/InactiveOffspringInfo"
+                "$ref": "#/definitions/StoreInactiveOffspringInfo"
               }
             }
           }
@@ -38,7 +38,7 @@
       }
     },
     {
-      "description": "List active offspring sorted by pair",
+      "description": "List active offspring",
       "type": "object",
       "required": [
         "list_active_offspring"
@@ -46,15 +46,15 @@
       "properties": {
         "list_active_offspring": {
           "type": "object",
+          "required": [
+            "active"
+          ],
           "properties": {
             "active": {
-              "description": "active offspring sorted by pair",
-              "type": [
-                "array",
-                "null"
-              ],
+              "description": "active offspring",
+              "type": "array",
               "items": {
-                "$ref": "#/definitions/OffspringInfo"
+                "$ref": "#/definitions/StoreOffspringInfo"
               }
             }
           }
@@ -62,7 +62,7 @@
       }
     },
     {
-      "description": "List inactive offspring in reverse chronological order",
+      "description": "List inactive offspring in no particular order",
       "type": "object",
       "required": [
         "list_inactive_offspring"
@@ -70,15 +70,15 @@
       "properties": {
         "list_inactive_offspring": {
           "type": "object",
+          "required": [
+            "inactive"
+          ],
           "properties": {
             "inactive": {
-              "description": "inactive offspring in reverse chronological order",
-              "type": [
-                "array",
-                "null"
-              ],
+              "description": "inactive offspring in no particular order",
+              "type": "array",
               "items": {
-                "$ref": "#/definitions/InactiveOffspringInfo"
+                "$ref": "#/definitions/StoreInactiveOffspringInfo"
               }
             }
           }
@@ -130,8 +130,8 @@
     "HumanAddr": {
       "type": "string"
     },
-    "InactiveOffspringInfo": {
-      "description": "inactive offspring display info",
+    "StoreInactiveOffspringInfo": {
+      "description": "inactive offspring storage/display format",
       "type": "object",
       "required": [
         "address",
@@ -146,23 +146,14 @@
             }
           ]
         },
-        "index": {
-          "description": "index in inactive offspring list",
-          "type": [
-            "integer",
-            "null"
-          ],
-          "format": "uint32",
-          "minimum": 0.0
-        },
         "label": {
           "description": "label used when initializing offspring",
           "type": "string"
         }
       }
     },
-    "OffspringInfo": {
-      "description": "active offspring display info",
+    "StoreOffspringInfo": {
+      "description": "active offspring info for storage/display",
       "type": "object",
       "required": [
         "address",

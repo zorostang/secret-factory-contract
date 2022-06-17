@@ -6,8 +6,6 @@ use serde::{Deserialize, Serialize};
 pub struct InitMsg {
     /// factory contract code hash and address
     pub factory: ContractInfo,
-    /// index within the factory
-    pub index: u32,
     /// label used when initializing offspring
     pub label: String,
     /// password to be used by factory
