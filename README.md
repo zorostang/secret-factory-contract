@@ -34,6 +34,15 @@ The following is an example InitMsg:
 
 ## **HandleMsg of the Factory** ##
 
+### **Create a Viewing Key** ###
+
+Before you can query the Factory Contract or any offspring of the Factory Contract, you'll need to create a viewing key: 
+```json
+{
+ "create_viewing_key": { "entropy": "fdkfhjhubvnk34ts" } 
+}
+```
+
 ### **Creating a New Offspring** ###
 
 Creating a new offspring also automatically registers it after the post init callback. The offspring contract requires an initial `count` and an `owner`. This can be called by anyone.
